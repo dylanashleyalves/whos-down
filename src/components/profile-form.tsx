@@ -110,7 +110,7 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
           <Field label="First name">
             <TextInput
               style={inputStyle}
-              placeholder="Dylan"
+              placeholder="Your first name"
               placeholderTextColor={theme.textSecondary}
               autoComplete="given-name"
               maxLength={40}
@@ -119,15 +119,18 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
             />
           </Field>
 
-          <Field label="City">
+          <Field label="Where are you based?">
             <TextInput
               style={inputStyle}
-              placeholder="Toronto"
+              placeholder="Your city, town, area or neighbourhood"
               placeholderTextColor={theme.textSecondary}
               maxLength={60}
               value={city}
               onChangeText={setCity}
             />
+            <ThemedText type="small" themeColor="textSecondary">
+              Write it the way locals would, plus your city or country so others know where that is.
+            </ThemedText>
           </Field>
 
           <Field label="What are you into?">
@@ -146,7 +149,7 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
           <Field label="About you (optional)">
             <TextInput
               style={[inputStyle, styles.multiline]}
-              placeholder="New to the city, play ball on weekends, always down for wings."
+              placeholder="New to the area, play ball on weekends, always up for food."
               placeholderTextColor={theme.textSecondary}
               multiline
               maxLength={200}

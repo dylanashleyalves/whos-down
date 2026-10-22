@@ -127,7 +127,7 @@ export default function NewActivityScreen() {
           <Field label="Where?">
             <TextInput
               style={inputStyle}
-              placeholder="Riverside Park courts"
+              placeholder="Park, gym, café, venue or address"
               placeholderTextColor={theme.textSecondary}
               maxLength={120}
               value={location}
