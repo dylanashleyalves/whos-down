@@ -49,6 +49,7 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
+      base64: true,
     });
     if (!result.canceled) setPhoto(result.assets[0]);
   }
@@ -69,8 +70,9 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
     setBusy(true);
     setError(null);
     try {
-      const avatarUrl = photo
-        ? await uploadAvatar(userId, photo.uri, photo.mimeType)
+      if (photo && !photo.base64) throw new Error('That photo could not be read. Try another one.');
+      const avatarUrl = photo?.base64
+        ? await uploadAvatar(userId, photo.base64, photo.mimeType)
         : (profile?.avatar_url ?? null);
 
       const { error } = await supabase.from('profiles').upsert({

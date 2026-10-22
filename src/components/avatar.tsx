@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,10 +12,21 @@ type AvatarProps = {
 };
 
 export function Avatar({ profile, size = 40 }: AvatarProps) {
+  // If a photo fails to load, show the initial instead of an empty circle.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const shape = { width: size, height: size, borderRadius: size / 2 };
+  const url = profile?.avatar_url;
 
-  if (profile?.avatar_url) {
-    return <Image source={{ uri: profile.avatar_url }} style={shape} contentFit="cover" />;
+  if (url && url !== failedUrl) {
+    return (
+      <Image
+        source={{ uri: url }}
+        style={shape}
+        contentFit="cover"
+        transition={150}
+        onError={() => setFailedUrl(url)}
+      />
+    );
   }
 
   const initial = profile?.display_name?.trim().charAt(0).toUpperCase() || '?';
