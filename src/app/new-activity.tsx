@@ -50,8 +50,9 @@ export default function NewActivityScreen() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<Category>('sports');
   const [location, setLocation] = useState('');
-  const [dayIndex, setDayIndex] = useState(0);
-  const [startsAt, setStartsAt] = useState<Date | null>(null);
+  // Start on today, or tomorrow if it's too late for any slots today.
+  const [dayIndex, setDayIndex] = useState(() => (timeSlots(days[0]).length > 0 ? 0 : 1));
+  const [startsAt, setStartsAt] = useState<Date | null>(() => timeSlots(days[dayIndex])[0] ?? null);
   const [spots, setSpots] = useState(3);
   const [details, setDetails] = useState('');
   const [busy, setBusy] = useState(false);
@@ -61,7 +62,16 @@ export default function NewActivityScreen() {
   const canPost = title.trim().length >= 3 && location.trim().length >= 2 && startsAt !== null;
 
   async function post() {
-    if (!startsAt) return;
+    const missing = [
+      title.trim().length < 3 && 'what you\'re doing (3+ characters)',
+      location.trim().length < 2 && 'where',
+      !startsAt && 'a time',
+    ].filter(Boolean);
+    if (missing.length > 0 || !startsAt) {
+      setError(`Add ${missing.join(', ')}.`);
+      return;
+    }
+
     setBusy(true);
     setError(null);
 
@@ -134,7 +144,7 @@ export default function NewActivityScreen() {
                   selected={dayIndex === i}
                   onPress={() => {
                     setDayIndex(i);
-                    setStartsAt(null);
+                    setStartsAt(timeSlots(day)[0] ?? null);
                   }}
                 />
               ))}
@@ -186,7 +196,7 @@ export default function NewActivityScreen() {
           )}
 
           <Pressable
-            disabled={!canPost || busy}
+            disabled={busy}
             onPress={post}
             style={({ pressed }) => [pressed && styles.pressed, (!canPost || busy) && styles.disabled]}>
             <View style={styles.postButton}>
