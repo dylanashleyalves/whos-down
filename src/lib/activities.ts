@@ -1,3 +1,6 @@
+import { PROFILE_SUMMARY, type ProfileSummary } from '@/lib/profiles';
+import { supabase } from '@/lib/supabase';
+
 export const Categories = {
   sports: { label: 'Sports', emoji: '🏀' },
   gym: { label: 'Gym', emoji: '🏋️' },
@@ -20,6 +23,41 @@ export type Activity = {
   details: string | null;
   created_at: string;
 };
+
+export type Member = {
+  user_id: string;
+  joined_at: string;
+  profile: ProfileSummary | null;
+};
+
+export type ActivityWithPeople = Activity & {
+  host: ProfileSummary | null;
+  members: Member[];
+};
+
+// The activity plus its host and everyone who joined. The host hint picks the
+// direct host link, since profiles also connect to activities through members.
+export const ACTIVITY_WITH_PEOPLE = `*,
+  host:profiles!activities_host_id_fkey(${PROFILE_SUMMARY}),
+  members:activity_members(user_id, joined_at, profile:profiles(${PROFILE_SUMMARY}))`;
+
+export async function fetchActivity(id: string) {
+  const { data, error } = await supabase
+    .from('activities')
+    .select(ACTIVITY_WITH_PEOPLE)
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data as unknown as ActivityWithPeople;
+}
+
+export function spotsLeft(activity: ActivityWithPeople) {
+  return Math.max(activity.spots - activity.members.length, 0);
+}
+
+export function hasStarted(activity: Pick<Activity, 'starts_at'>) {
+  return new Date(activity.starts_at).getTime() <= Date.now();
+}
 
 export function formatDay(date: Date) {
   const today = new Date();
