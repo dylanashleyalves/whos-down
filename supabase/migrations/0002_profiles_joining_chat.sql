@@ -1,3 +1,4 @@
+
 -- Profiles, joining activities, group chat and "hang again".
 -- Run this once in Supabase: Dashboard -> SQL Editor -> New query -> paste -> Run.
 -- Run 0001_activities.sql first if you haven't.

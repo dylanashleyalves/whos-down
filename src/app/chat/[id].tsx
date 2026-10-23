@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
@@ -127,7 +127,11 @@ export default function ChatScreen() {
               const sender = people.get(item.user_id);
               return (
                 <View style={[styles.messageRow, mine && styles.mineRow]}>
-                  {!mine && <Avatar profile={sender} size={28} />}
+                  {!mine && (
+                    <Pressable onPress={() => router.push(`/user/${item.user_id}`)}>
+                      <Avatar profile={sender} size={28} />
+                    </Pressable>
+                  )}
                   <ThemedView
                     type={mine ? 'backgroundSelected' : 'backgroundElement'}
                     style={styles.bubble}>

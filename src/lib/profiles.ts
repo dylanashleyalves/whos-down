@@ -13,6 +13,38 @@ export type Profile = {
 
 export type ProfileSummary = Pick<Profile, 'id' | 'display_name' | 'avatar_url'>;
 
+// Only visible to the user themselves.
+export type PrivateProfile = {
+  id: string;
+  birthdate: string;
+  accepted_guidelines_at: string;
+};
+
+export const MIN_AGE = 18;
+
+// Builds a real calendar date from what the user typed, or null if it isn't one.
+export function parseBirthdate(day: string, month: string, year: string) {
+  const d = Number(day);
+  const m = Number(month);
+  const y = Number(year);
+  if (!Number.isInteger(d) || !Number.isInteger(m) || !Number.isInteger(y) || y < 1900) return null;
+
+  const date = new Date(Date.UTC(y, m - 1, d));
+  if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) {
+    return null;
+  }
+  return date;
+}
+
+export function ageOn(birthdate: Date, today = new Date()) {
+  let age = today.getFullYear() - birthdate.getUTCFullYear();
+  const hadBirthday =
+    today.getMonth() > birthdate.getUTCMonth() ||
+    (today.getMonth() === birthdate.getUTCMonth() && today.getDate() >= birthdate.getUTCDate());
+  if (!hadBirthday) age -= 1;
+  return age;
+}
+
 export const PROFILE_SUMMARY = 'id, display_name, avatar_url';
 
 export function displayName(profile: Pick<Profile, 'display_name'> | null | undefined) {

@@ -16,6 +16,7 @@ import {
   spotsLeft,
   type ActivityWithPeople,
 } from '@/lib/activities';
+import { confirmAction } from '@/lib/confirm';
 import { displayName, type ProfileSummary } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -66,6 +67,21 @@ export default function ActivityScreen() {
     if (error) setError(error.message);
     await load();
     setBusy(false);
+  }
+
+  async function remove() {
+    const ok = await confirmAction(
+      'Delete this activity?',
+      'Everyone who joined will lose it, along with the group chat. This can’t be undone.',
+      'Delete'
+    );
+    if (!ok) return;
+
+    setBusy(true);
+    const { error } = await supabase.from('activities').delete().eq('id', id);
+    setBusy(false);
+    if (error) setError(error.message);
+    else router.back();
   }
 
   if (!activity) {
@@ -168,18 +184,22 @@ export default function ActivityScreen() {
             const asked = hangAgain.has(userId);
             return (
               <View key={userId} style={styles.person}>
-                <Avatar profile={profile} />
-                <View style={styles.personText}>
-                  <ThemedText type="smallBold">
-                    {displayName(profile)}
-                    {userId === myId ? ' (you)' : ''}
-                  </ThemedText>
-                  {hosting && (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      Host
+                <Pressable
+                  onPress={() => router.push(`/user/${userId}`)}
+                  style={({ pressed }) => [styles.personTap, pressed && styles.pressed]}>
+                  <Avatar profile={profile} />
+                  <View style={styles.personText}>
+                    <ThemedText type="smallBold">
+                      {displayName(profile)}
+                      {userId === myId ? ' (you)' : ''}
                     </ThemedText>
-                  )}
-                </View>
+                    {hosting && (
+                      <ThemedText type="small" themeColor="textSecondary">
+                        Host
+                      </ThemedText>
+                    )}
+                  </View>
+                </Pressable>
                 {canAsk && (
                   <Pressable
                     disabled={busy}
@@ -212,6 +232,18 @@ export default function ActivityScreen() {
             Tap &quot;Hang again?&quot; for anyone you&apos;d meet up with again. They only find out
             if they pick you too, and then you&apos;re in each other&apos;s crew.
           </ThemedText>
+        )}
+
+        {isHost ? (
+          <PrimaryButton label="Delete activity" variant="secondary" busy={busy} onPress={remove} />
+        ) : (
+          <Pressable
+            onPress={() => router.push({ pathname: '/report', params: { activityId: activity.id } })}
+            style={styles.reportLink}>
+            <ThemedText type="small" themeColor="textSecondary">
+              Report this activity
+            </ThemedText>
+          </Pressable>
         )}
       </ScrollView>
     </ThemedView>
@@ -261,8 +293,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
   },
+  personTap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
   personText: {
     flex: 1,
+  },
+  reportLink: {
+    alignSelf: 'center',
+    padding: Spacing.three,
   },
   hangButton: {
     paddingVertical: Spacing.two,

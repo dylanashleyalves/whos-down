@@ -8,13 +8,14 @@ import { AuthProvider, useAuth } from '@/providers/auth-provider';
 SplashScreen.preventAutoHideAsync();
 
 function RootNavigator() {
-  const { session, profile, isLoading } = useAuth();
+  const { session, profile, privateProfile, isLoading } = useAuth();
 
   // Keep the native splash screen up until we know who the user is.
   if (isLoading) return null;
 
   const signedIn = !!session;
-  const hasProfile = !!profile?.display_name;
+  // Setup is done once they have a name, confirmed their age and agreed to the guidelines.
+  const hasProfile = !!profile?.display_name && !!privateProfile;
 
   return (
     <>
@@ -32,6 +33,11 @@ function RootNavigator() {
             name="edit-profile"
             options={{ presentation: 'modal', headerShown: true, title: 'Edit profile' }}
           />
+          <Stack.Screen name="user/[id]" options={{ headerShown: true, title: 'Profile' }} />
+          <Stack.Screen
+            name="report"
+            options={{ presentation: 'modal', headerShown: true, title: 'Report' }}
+          />
         </Stack.Protected>
         <Stack.Protected guard={signedIn && !hasProfile}>
           <Stack.Screen name="onboarding" />
@@ -39,6 +45,10 @@ function RootNavigator() {
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="sign-in" />
         </Stack.Protected>
+        <Stack.Screen
+          name="guidelines"
+          options={{ headerShown: true, title: 'Community guidelines' }}
+        />
       </Stack>
     </>
   );

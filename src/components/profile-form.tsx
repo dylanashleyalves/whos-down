@@ -12,13 +12,14 @@ import {
 
 import { Avatar } from '@/components/avatar';
 import { Chip } from '@/components/chip';
+import { GuidelinesList } from '@/components/guidelines-list';
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Categories, type Category } from '@/lib/activities';
-import { uploadAvatar } from '@/lib/profiles';
+import { ageOn, MIN_AGE, parseBirthdate, uploadAvatar } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -30,9 +31,16 @@ type ProfileFormProps = {
 
 export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) {
   const theme = useTheme();
-  const { session, profile, refreshProfile } = useAuth();
+  const { session, profile, privateProfile, refreshProfile } = useAuth();
+  // Birthday and guidelines are asked once, during setup.
+  const needsSetup = !privateProfile;
 
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '');
+  const [birthDay, setBirthDay] = useState('');
+  const [birthMonth, setBirthMonth] = useState('');
+  const [birthYear, setBirthYear] = useState('');
+  const [agreed, setAgreed] = useState(false);
+  const [showGuidelines, setShowGuidelines] = useState(false);
   const [city, setCity] = useState(profile?.city ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [interests, setInterests] = useState<Category[]>(profile?.interests ?? []);
@@ -67,6 +75,22 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
       return;
     }
 
+    const birthdate = parseBirthdate(birthDay, birthMonth, birthYear);
+    if (needsSetup) {
+      if (!birthdate || birthdate > new Date()) {
+        setError('Add your real date of birth.');
+        return;
+      }
+      if (ageOn(birthdate) < MIN_AGE) {
+        setError(`You must be ${MIN_AGE} or older to use Who's Down.`);
+        return;
+      }
+      if (!agreed) {
+        setError('Agree to the community guidelines to continue.');
+        return;
+      }
+    }
+
     setBusy(true);
     setError(null);
     try {
@@ -84,6 +108,14 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
         avatar_url: avatarUrl,
       });
       if (error) throw error;
+
+      if (needsSetup && birthdate) {
+        const { error } = await supabase.from('profile_private').upsert({
+          id: userId,
+          birthdate: birthdate.toISOString().slice(0, 10),
+        });
+        if (error) throw error;
+      }
 
       await refreshProfile();
       onSaved();
@@ -160,6 +192,75 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
             />
           </Field>
 
+          {needsSetup && (
+            <>
+              <Field label="Date of birth">
+                <View style={styles.dateRow}>
+                  <TextInput
+                    style={[inputStyle, styles.dateInput]}
+                    placeholder="Day"
+                    placeholderTextColor={theme.textSecondary}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    value={birthDay}
+                    onChangeText={setBirthDay}
+                  />
+                  <TextInput
+                    style={[inputStyle, styles.dateInput]}
+                    placeholder="Month"
+                    placeholderTextColor={theme.textSecondary}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    value={birthMonth}
+                    onChangeText={setBirthMonth}
+                  />
+                  <TextInput
+                    style={[inputStyle, styles.yearInput]}
+                    placeholder="Year"
+                    placeholderTextColor={theme.textSecondary}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    value={birthYear}
+                    onChangeText={setBirthYear}
+                  />
+                </View>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Only you can see this. You must be {MIN_AGE} or older.
+                </ThemedText>
+              </Field>
+
+              <View style={styles.agreeRow}>
+                <Pressable onPress={() => setAgreed(!agreed)} style={styles.agreeTap}>
+                  <ThemedView
+                    type={agreed ? 'backgroundSelected' : 'backgroundElement'}
+                    style={[styles.checkbox, agreed && styles.checkboxOn]}>
+                    {agreed && <ThemedText type="smallBold">✓</ThemedText>}
+                  </ThemedView>
+                  <ThemedText type="small" style={styles.agreeText}>
+                    I agree to the community guidelines
+                  </ThemedText>
+                </Pressable>
+                <Pressable onPress={() => setShowGuidelines(!showGuidelines)}>
+                  <ThemedText type="linkPrimary">{showGuidelines ? 'Hide' : 'Read them'}</ThemedText>
+                </Pressable>
+              </View>
+
+              {/* Shown in place, so leaving the form never loses what was typed. */}
+              {showGuidelines && (
+                <ThemedView type="backgroundElement" style={styles.guidelines}>
+                  <GuidelinesList />
+                  <PrimaryButton
+                    label="I agree"
+                    onPress={() => {
+                      setAgreed(true);
+                      setShowGuidelines(false);
+                    }}
+                  />
+                </ThemedView>
+              )}
+            </>
+          )}
+
           {error && (
             <ThemedText type="small" style={styles.error}>
               {error}
@@ -225,5 +326,48 @@ const styles = StyleSheet.create({
   },
   error: {
     color: '#e5484d',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  dateInput: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  yearInput: {
+    flex: 1.5,
+    textAlign: 'center',
+  },
+  agreeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  agreeTap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxOn: {
+    borderColor: '#3c87f7',
+  },
+  agreeText: {
+    flexShrink: 1,
+  },
+  guidelines: {
+    padding: Spacing.four,
+    borderRadius: Spacing.four,
+    gap: Spacing.four,
   },
 });
