@@ -239,7 +239,16 @@ export default function ActivityScreen() {
         )}
 
         {isHost ? (
-          <PrimaryButton label="Delete activity" variant="secondary" busy={busy} onPress={remove} />
+          <>
+            {!started && (
+              <PrimaryButton
+                label="Edit activity"
+                variant="secondary"
+                onPress={() => router.push(`/edit-activity/${activity.id}`)}
+              />
+            )}
+            <PrimaryButton label="Delete activity" variant="secondary" busy={busy} onPress={remove} />
+          </>
         ) : (
           <Pressable
             onPress={() => router.push({ pathname: '/report', params: { activityId: activity.id } })}

@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { Chip } from '@/components/chip';
+import { QuietReminder } from '@/components/quiet-reminder';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
@@ -21,44 +22,90 @@ import {
   Categories,
   formatDay,
   formatTime,
+  hasStarted,
   spotsLeft,
   type ActivityWithPeople,
   type Category,
 } from '@/lib/activities';
+import { fetchUnreadCounts } from '@/lib/chat';
 import { formatCountry } from '@/lib/countries';
 import { displayName } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
-// Keep activities that started up to 2 hours ago, so ongoing games still show.
-const SHOW_PAST_MS = 2 * 60 * 60 * 1000;
+// My plans keeps past activities this long, so you can still chat and pick "Hang again?".
+const MY_PLANS_HISTORY_MS = 30 * 24 * 60 * 60 * 1000;
+
+type FeedView = 'discover' | 'mine';
+
+function isMine(activity: ActivityWithPeople, myId: string | undefined) {
+  return activity.host_id === myId || activity.members.some((m) => m.user_id === myId);
+}
+
+// Discover: upcoming activities with spots left. You'll find your own in My plans.
+async function fetchDiscover(myId: string | undefined) {
+  const { data, error } = await supabase
+    .from('activities')
+    .select(ACTIVITY_WITH_PEOPLE)
+    .gte('starts_at', new Date().toISOString())
+    .order('starts_at', { ascending: true })
+    .limit(100);
+  if (error) throw error;
+  return (data as unknown as ActivityWithPeople[]).filter(
+    (a) => isMine(a, myId) || spotsLeft(a) > 0
+  );
+}
+
+// My plans: everything you're hosting or joined, upcoming first, then recent past ones.
+async function fetchMyPlans(myId: string) {
+  const joined = await supabase.from('activity_members').select('activity_id').eq('user_id', myId);
+  if (joined.error) throw joined.error;
+  const ids = joined.data.map((row) => row.activity_id as string);
+
+  const { data, error } = await supabase
+    .from('activities')
+    .select(ACTIVITY_WITH_PEOPLE)
+    .or(ids.length > 0 ? `host_id.eq.${myId},id.in.(${ids.join(',')})` : `host_id.eq.${myId}`)
+    .gte('starts_at', new Date(Date.now() - MY_PLANS_HISTORY_MS).toISOString())
+    .order('starts_at', { ascending: true })
+    .limit(100);
+  if (error) throw error;
+
+  const all = data as unknown as ActivityWithPeople[];
+  const upcoming = all.filter((a) => !hasStarted(a));
+  const past = all.filter((a) => hasStarted(a)).reverse();
+  return [...upcoming, ...past];
+}
 
 export default function FeedScreen() {
   const { session, profile } = useAuth();
+  const myId = session?.user.id;
+  const [view, setView] = useState<FeedView>('discover');
   const [activities, setActivities] = useState<ActivityWithPeople[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  // Which view the list currently holds, so switching shows a spinner, not stale cards.
+  const [loadedView, setLoadedView] = useState<FeedView | null>(null);
   const [filter, setFilter] = useState<Category | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unread, setUnread] = useState<Map<string, number>>(new Map());
+  const totalUnread = [...unread.values()].reduce((sum, n) => sum + n, 0);
 
   const shown = filter ? activities.filter((a) => a.category === filter) : activities;
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('activities')
-      .select(ACTIVITY_WITH_PEOPLE)
-      .gte('starts_at', new Date(Date.now() - SHOW_PAST_MS).toISOString())
-      .order('starts_at', { ascending: true })
-      .limit(100);
-
-    if (error) {
-      setError(error.message);
-    } else {
+    try {
+      const [result, counts] = await Promise.all([
+        view === 'mine' && myId ? fetchMyPlans(myId) : fetchDiscover(myId),
+        fetchUnreadCounts(),
+      ]);
+      setActivities(result);
+      setUnread(counts);
       setError(null);
-      setActivities(data as unknown as ActivityWithPeople[]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load activities.');
     }
-    setLoaded(true);
-  }, []);
+    setLoadedView(view);
+  }, [view, myId]);
 
   // Reload whenever the feed comes back into view, e.g. after posting.
   useFocusEffect(
@@ -89,8 +136,15 @@ export default function FeedScreen() {
           </Pressable>
         </View>
 
+        <View style={styles.tabs}>
+          <Chip label="Discover" selected={view === 'discover'} onPress={() => setView('discover')} />
+          <Chip label="My plans" selected={view === 'mine'} onPress={() => setView('mine')} />
+        </View>
+
         <ThemedText type="small" themeColor="textSecondary">
-          Activities in {formatCountry(profile?.country) ?? 'your country'}
+          {view === 'discover'
+            ? `Upcoming activities with spots left in ${formatCountry(profile?.country) ?? 'your country'}`
+            : "Activities you're hosting or going to, including the last 30 days"}
         </ThemedText>
 
         <View>
@@ -110,13 +164,25 @@ export default function FeedScreen() {
           </ScrollView>
         </View>
 
+        {view === 'discover' && <QuietReminder />}
+
+        {totalUnread > 0 && view === 'discover' && (
+          <Pressable onPress={() => setView('mine')}>
+            <View style={styles.unreadBanner}>
+              <ThemedText type="smallBold" style={styles.unreadLabel}>
+                💬 {totalUnread} new {totalUnread === 1 ? 'message' : 'messages'} in My plans
+              </ThemedText>
+            </View>
+          </Pressable>
+        )}
+
         {error && (
           <ThemedText type="small" style={styles.error}>
             {error}
           </ThemedText>
         )}
 
-        {!loaded ? (
+        {loadedView !== view ? (
           <ActivityIndicator size="large" style={styles.spinner} />
         ) : (
           <FlatList
@@ -124,14 +190,22 @@ export default function FeedScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-            renderItem={({ item }) => <ActivityCard activity={item} myId={session?.user.id} />}
+            renderItem={({ item }) => (
+              <ActivityCard activity={item} myId={myId} unread={unread.get(item.id) ?? 0} />
+            )}
             ListEmptyComponent={
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="smallBold">
-                  {filter ? `No ${Categories[filter].label.toLowerCase()} activities yet` : 'No activities yet'}
+                  {view === 'mine'
+                    ? 'No plans yet'
+                    : filter
+                      ? `No ${Categories[filter].label.toLowerCase()} activities yet`
+                      : 'No activities yet'}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  Be the first. Tap &quot;+ Post&quot; to start a game, a gym session or a hangout.
+                  {view === 'mine'
+                    ? 'Activities you post or join show up here, so you can find the group chat.'
+                    : 'Be the first. Tap "+ Post" to start a game, a gym session or a hangout.'}
                 </ThemedText>
               </ThemedView>
             }
@@ -142,7 +216,9 @@ export default function FeedScreen() {
   );
 }
 
-function ActivityCard({ activity, myId }: { activity: ActivityWithPeople; myId?: string }) {
+type ActivityCardProps = { activity: ActivityWithPeople; myId?: string; unread: number };
+
+function ActivityCard({ activity, myId, unread }: ActivityCardProps) {
   const startsAt = new Date(activity.starts_at);
   const category = Categories[activity.category];
   const left = spotsLeft(activity);
@@ -175,6 +251,11 @@ function ActivityCard({ activity, myId }: { activity: ActivityWithPeople; myId?:
           🕒 {formatDay(startsAt)} · {formatTime(startsAt)}
         </ThemedText>
         <ThemedText type="small">📍 {activity.location}</ThemedText>
+        {unread > 0 && (
+          <ThemedText type="smallBold" style={styles.unreadText}>
+            💬 {unread} new {unread === 1 ? 'message' : 'messages'}
+          </ThemedText>
+        )}
         <View style={styles.cardBottom}>
           <View style={styles.host}>
             <Avatar profile={activity.host} size={24} />
@@ -183,7 +264,11 @@ function ActivityCard({ activity, myId }: { activity: ActivityWithPeople; myId?:
             </ThemedText>
           </View>
           <ThemedText type="smallBold" themeColor="textSecondary">
-            {left === 0 ? 'Full' : `${left} ${left === 1 ? 'spot' : 'spots'} left`}
+            {hasStarted(activity)
+              ? 'Started'
+              : left === 0
+                ? 'Full'
+                : `${left} ${left === 1 ? 'spot' : 'spots'} left`}
           </ThemedText>
         </View>
       </ThemedView>
@@ -230,6 +315,22 @@ const styles = StyleSheet.create({
   cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  tabs: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  unreadBanner: {
+    backgroundColor: '#3c87f7',
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.three,
+  },
+  unreadLabel: {
+    color: '#ffffff',
+  },
+  unreadText: {
+    color: '#3c87f7',
   },
   filters: {
     gap: Spacing.two,

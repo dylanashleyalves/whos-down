@@ -51,6 +51,23 @@ export async function fetchActivity(id: string) {
   return data as unknown as ActivityWithPeople;
 }
 
+// Each person can post one new activity per day (also enforced in the database).
+export const POST_LIMIT_MS = 24 * 60 * 60 * 1000;
+
+// When this user can next post, or null if they can post now.
+export async function fetchNextPostTime(userId: string) {
+  const { data } = await supabase
+    .from('activities')
+    .select('created_at')
+    .eq('host_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  const next = new Date(new Date(data.created_at as string).getTime() + POST_LIMIT_MS);
+  return next > new Date() ? next : null;
+}
+
 export function spotsLeft(activity: ActivityWithPeople) {
   return Math.max(activity.spots - activity.members.length, 0);
 }

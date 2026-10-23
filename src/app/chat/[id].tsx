@@ -17,17 +17,10 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchActivity, formatTime, type ActivityWithPeople } from '@/lib/activities';
+import { markChatRead, type Message } from '@/lib/chat';
 import { displayName, type ProfileSummary } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
-
-type Message = {
-  id: string;
-  activity_id: string;
-  user_id: string;
-  body: string;
-  created_at: string;
-};
 
 // Newest first, because the list is inverted (newest at the bottom).
 function addMessage(messages: Message[], message: Message) {
@@ -74,6 +67,12 @@ export default function ChatScreen() {
       supabase.removeChannel(channel);
     };
   }, [id]);
+
+  // While the chat is open, everything in it counts as read (including new messages).
+  const latestId = messages[0]?.id;
+  useEffect(() => {
+    markChatRead(id);
+  }, [id, latestId]);
 
   // Look up names and photos for message senders.
   const people = useMemo(() => {

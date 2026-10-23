@@ -2,7 +2,8 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { MessageAlerts } from '@/components/message-alerts';
+import { AnimatedSplashOverlay } from '@/components/splash-overlay';
 import { isSetupComplete } from '@/lib/profiles';
 import { AuthProvider, useAuth } from '@/providers/auth-provider';
 
@@ -30,6 +31,10 @@ function RootNavigator() {
             name="new-activity"
             options={{ presentation: 'modal', headerShown: true, title: 'Post an activity' }}
           />
+          <Stack.Screen
+            name="edit-activity/[id]"
+            options={{ presentation: 'modal', headerShown: true, title: 'Edit activity' }}
+          />
           <Stack.Screen name="activity/[id]" options={{ headerShown: true, title: 'Activity' }} />
           <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: 'Group chat' }} />
           <Stack.Screen
@@ -53,6 +58,7 @@ function RootNavigator() {
           options={{ headerShown: true, title: 'Community guidelines' }}
         />
       </Stack>
+      {signedIn && hasProfile && <MessageAlerts />}
     </>
   );
 }
