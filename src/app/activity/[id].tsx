@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { PrimaryButton } from '@/components/primary-button';
@@ -87,7 +87,11 @@ export default function ActivityScreen() {
   if (!activity) {
     return (
       <ThemedView style={styles.centered}>
-        <ThemedText themeColor="textSecondary">{error ?? 'Loading…'}</ThemedText>
+        {error ? (
+          <ThemedText themeColor="textSecondary">{error}</ThemedText>
+        ) : (
+          <ActivityIndicator size="large" />
+        )}
       </ThemedView>
     );
   }

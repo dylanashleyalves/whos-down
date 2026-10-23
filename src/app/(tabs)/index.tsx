@@ -1,9 +1,18 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { Chip } from '@/components/chip';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
@@ -14,6 +23,7 @@ import {
   formatTime,
   spotsLeft,
   type ActivityWithPeople,
+  type Category,
 } from '@/lib/activities';
 import { formatCountry } from '@/lib/countries';
 import { displayName } from '@/lib/profiles';
@@ -26,8 +36,12 @@ const SHOW_PAST_MS = 2 * 60 * 60 * 1000;
 export default function FeedScreen() {
   const { session, profile } = useAuth();
   const [activities, setActivities] = useState<ActivityWithPeople[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [filter, setFilter] = useState<Category | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const shown = filter ? activities.filter((a) => a.category === filter) : activities;
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -43,6 +57,7 @@ export default function FeedScreen() {
       setError(null);
       setActivities(data as unknown as ActivityWithPeople[]);
     }
+    setLoaded(true);
   }, []);
 
   // Reload whenever the feed comes back into view, e.g. after posting.
@@ -78,27 +93,50 @@ export default function FeedScreen() {
           Activities in {formatCountry(profile?.country) ?? 'your country'}
         </ThemedText>
 
+        <View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filters}>
+            <Chip label="All" selected={filter === null} onPress={() => setFilter(null)} />
+            {(Object.keys(Categories) as Category[]).map((key) => (
+              <Chip
+                key={key}
+                label={`${Categories[key].emoji} ${Categories[key].label}`}
+                selected={filter === key}
+                onPress={() => setFilter(filter === key ? null : key)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+
         {error && (
           <ThemedText type="small" style={styles.error}>
             {error}
           </ThemedText>
         )}
 
-        <FlatList
-          data={activities}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-          renderItem={({ item }) => <ActivityCard activity={item} myId={session?.user.id} />}
-          ListEmptyComponent={
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">No activities yet</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Be the first. Tap &quot;+ Post&quot; to start a game, a gym session or a hangout.
-              </ThemedText>
-            </ThemedView>
-          }
-        />
+        {!loaded ? (
+          <ActivityIndicator size="large" style={styles.spinner} />
+        ) : (
+          <FlatList
+            data={shown}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.list}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+            renderItem={({ item }) => <ActivityCard activity={item} myId={session?.user.id} />}
+            ListEmptyComponent={
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="smallBold">
+                  {filter ? `No ${Categories[filter].label.toLowerCase()} activities yet` : 'No activities yet'}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Be the first. Tap &quot;+ Post&quot; to start a game, a gym session or a hangout.
+                </ThemedText>
+              </ThemedView>
+            }
+          />
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -192,6 +230,12 @@ const styles = StyleSheet.create({
   cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  filters: {
+    gap: Spacing.two,
+  },
+  spinner: {
+    marginTop: Spacing.six,
   },
   cardBottom: {
     flexDirection: 'row',
