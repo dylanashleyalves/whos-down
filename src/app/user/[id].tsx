@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { Categories } from '@/lib/activities';
 import { confirmAction } from '@/lib/confirm';
+import { formatCountry } from '@/lib/countries';
 import { displayName, type Profile } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -80,7 +81,11 @@ export default function UserScreen() {
         <View style={styles.header}>
           <Avatar profile={person} size={96} />
           <ThemedText type="subtitle">{displayName(person)}</ThemedText>
-          {person.city && <ThemedText themeColor="textSecondary">📍 {person.city}</ThemedText>}
+          <ThemedText themeColor="textSecondary">
+            {[person.city && `📍 ${person.city}`, formatCountry(person.country)]
+              .filter(Boolean)
+              .join(' · ')}
+          </ThemedText>
         </View>
 
         {person.bio && <ThemedText style={styles.center}>{person.bio}</ThemedText>}

@@ -15,6 +15,7 @@ import {
   spotsLeft,
   type ActivityWithPeople,
 } from '@/lib/activities';
+import { formatCountry } from '@/lib/countries';
 import { displayName } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -23,7 +24,7 @@ import { useAuth } from '@/providers/auth-provider';
 const SHOW_PAST_MS = 2 * 60 * 60 * 1000;
 
 export default function FeedScreen() {
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const [activities, setActivities] = useState<ActivityWithPeople[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +73,10 @@ export default function FeedScreen() {
             </View>
           </Pressable>
         </View>
+
+        <ThemedText type="small" themeColor="textSecondary">
+          Activities in {formatCountry(profile?.country) ?? 'your country'}
+        </ThemedText>
 
         {error && (
           <ThemedText type="small" style={styles.error}>

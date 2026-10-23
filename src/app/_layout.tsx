@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { isSetupComplete } from '@/lib/profiles';
 import { AuthProvider, useAuth } from '@/providers/auth-provider';
 
 SplashScreen.preventAutoHideAsync();
@@ -14,14 +15,16 @@ function RootNavigator() {
   if (isLoading) return null;
 
   const signedIn = !!session;
-  // Setup is done once they have a name, confirmed their age and agreed to the guidelines.
-  const hasProfile = !!profile?.display_name && !!privateProfile;
+  const hasProfile = isSetupComplete(profile, privateProfile);
+  // Where blocked screens send people. Without this, Expo Router falls back to the
+  // first open screen by file name, which is the guidelines page: a dead end.
+  const home = !signedIn ? '/sign-in' : hasProfile ? '/' : '/onboarding';
 
   return (
     <>
       <AnimatedSplashOverlay />
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Protected guard={signedIn && hasProfile}>
+        <Stack.Protected guard={signedIn && hasProfile} redirectTo={home}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen
             name="new-activity"
@@ -39,10 +42,10 @@ function RootNavigator() {
             options={{ presentation: 'modal', headerShown: true, title: 'Report' }}
           />
         </Stack.Protected>
-        <Stack.Protected guard={signedIn && !hasProfile}>
+        <Stack.Protected guard={signedIn && !hasProfile} redirectTo={home}>
           <Stack.Screen name="onboarding" />
         </Stack.Protected>
-        <Stack.Protected guard={!signedIn}>
+        <Stack.Protected guard={!signedIn} redirectTo={home}>
           <Stack.Screen name="sign-in" />
         </Stack.Protected>
         <Stack.Screen

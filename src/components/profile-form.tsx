@@ -12,6 +12,7 @@ import {
 
 import { Avatar } from '@/components/avatar';
 import { Chip } from '@/components/chip';
+import { CountryPicker } from '@/components/country-picker';
 import { GuidelinesList } from '@/components/guidelines-list';
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
@@ -19,6 +20,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Categories, type Category } from '@/lib/activities';
+import { deviceCountry } from '@/lib/countries';
 import { ageOn, MIN_AGE, parseBirthdate, uploadAvatar } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -32,10 +34,13 @@ type ProfileFormProps = {
 export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) {
   const theme = useTheme();
   const { session, profile, privateProfile, refreshProfile } = useAuth();
-  // Birthday and guidelines are asked once, during setup.
+  // Birthday, guidelines and "I'm a guy" are asked once, during setup.
   const needsSetup = !privateProfile;
+  const needsGuyConfirmation = !privateProfile?.confirmed_guy_at;
 
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '');
+  const [country, setCountry] = useState<string | null>(profile?.country ?? deviceCountry());
+  const [isGuy, setIsGuy] = useState(false);
   const [birthDay, setBirthDay] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthYear, setBirthYear] = useState('');
@@ -74,6 +79,14 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
       setError('Add your first name (2+ characters).');
       return;
     }
+    if (!country) {
+      setError('Pick your country.');
+      return;
+    }
+    if (needsGuyConfirmation && !isGuy) {
+      setError("Who's Down is for guys. Confirm you're a guy to continue.");
+      return;
+    }
 
     const birthdate = parseBirthdate(birthDay, birthMonth, birthYear);
     if (needsSetup) {
@@ -103,17 +116,26 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
         id: userId,
         display_name: displayName.trim(),
         city: city.trim() || null,
+        country,
         bio: bio.trim() || null,
         interests,
         avatar_url: avatarUrl,
       });
       if (error) throw error;
 
+      const confirmedGuyAt = new Date().toISOString();
       if (needsSetup && birthdate) {
         const { error } = await supabase.from('profile_private').upsert({
           id: userId,
           birthdate: birthdate.toISOString().slice(0, 10),
+          confirmed_guy_at: confirmedGuyAt,
         });
+        if (error) throw error;
+      } else if (needsGuyConfirmation) {
+        const { error } = await supabase
+          .from('profile_private')
+          .update({ confirmed_guy_at: confirmedGuyAt })
+          .eq('id', userId);
         if (error) throw error;
       }
 
@@ -153,6 +175,13 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
             />
           </Field>
 
+          <Field label="Country">
+            <CountryPicker value={country} onChange={setCountry} />
+            <ThemedText type="small" themeColor="textSecondary">
+              You&apos;ll see and join activities from this country only.
+            </ThemedText>
+          </Field>
+
           <Field label="Where are you based?">
             <TextInput
               style={inputStyle}
@@ -163,7 +192,7 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
               onChangeText={setCity}
             />
             <ThemedText type="small" themeColor="textSecondary">
-              Write it the way locals would, plus your city or country so others know where that is.
+              Write it the way locals would, like your neighbourhood, area or city.
             </ThemedText>
           </Field>
 
@@ -191,6 +220,14 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
               onChangeText={setBio}
             />
           </Field>
+
+          {needsGuyConfirmation && (
+            <Checkbox
+              checked={isGuy}
+              onToggle={() => setIsGuy(!isGuy)}
+              label="I'm a guy. Who's Down is a space for men to make friends."
+            />
+          )}
 
           {needsSetup && (
             <>
@@ -230,16 +267,11 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
               </Field>
 
               <View style={styles.agreeRow}>
-                <Pressable onPress={() => setAgreed(!agreed)} style={styles.agreeTap}>
-                  <ThemedView
-                    type={agreed ? 'backgroundSelected' : 'backgroundElement'}
-                    style={[styles.checkbox, agreed && styles.checkboxOn]}>
-                    {agreed && <ThemedText type="smallBold">✓</ThemedText>}
-                  </ThemedView>
-                  <ThemedText type="small" style={styles.agreeText}>
-                    I agree to the community guidelines
-                  </ThemedText>
-                </Pressable>
+                <Checkbox
+                  checked={agreed}
+                  onToggle={() => setAgreed(!agreed)}
+                  label="I agree to the community guidelines"
+                />
                 <Pressable onPress={() => setShowGuidelines(!showGuidelines)}>
                   <ThemedText type="linkPrimary">{showGuidelines ? 'Hide' : 'Read them'}</ThemedText>
                 </Pressable>
@@ -276,6 +308,21 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
         </ScrollView>
       </KeyboardAvoidingView>
     </ThemedView>
+  );
+}
+
+function Checkbox({ checked, onToggle, label }: { checked: boolean; onToggle: () => void; label: string }) {
+  return (
+    <Pressable onPress={onToggle} style={styles.agreeTap}>
+      <ThemedView
+        type={checked ? 'backgroundSelected' : 'backgroundElement'}
+        style={[styles.checkbox, checked && styles.checkboxOn]}>
+        {checked && <ThemedText type="smallBold">✓</ThemedText>}
+      </ThemedView>
+      <ThemedText type="small" style={styles.agreeText}>
+        {label}
+      </ThemedText>
+    </Pressable>
   );
 }
 

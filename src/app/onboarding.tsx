@@ -26,7 +26,7 @@ export default function OnboardingScreen() {
               </ThemedText>
               <ThemedText themeColor="textSecondary">
                 {returning
-                  ? 'To keep everyone safe, confirm your age and agree to the community guidelines.'
+                  ? 'To keep everyone safe, confirm a few details. You only do this once.'
                   : 'People are more likely to say they’re down when they can see who you are.'}
               </ThemedText>
             </View>

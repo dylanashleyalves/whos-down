@@ -5,6 +5,8 @@ export type Profile = {
   id: string;
   display_name: string | null;
   city: string | null;
+  // Two-letter ISO code, e.g. 'SG'. People only see activities from their own country.
+  country: string | null;
   bio: string | null;
   interests: Category[];
   avatar_url: string | null;
@@ -18,9 +20,16 @@ export type PrivateProfile = {
   id: string;
   birthdate: string;
   accepted_guidelines_at: string;
+  confirmed_guy_at: string | null;
 };
 
 export const MIN_AGE = 18;
+
+// Setup is done once they have a name and country, confirmed their age and that
+// they're a guy, and agreed to the guidelines.
+export function isSetupComplete(profile: Profile | null, privateProfile: PrivateProfile | null) {
+  return !!profile?.display_name && !!profile.country && !!privateProfile?.confirmed_guy_at;
+}
 
 // Builds a real calendar date from what the user typed, or null if it isn't one.
 export function parseBirthdate(day: string, month: string, year: string) {

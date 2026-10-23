@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { Categories } from '@/lib/activities';
+import { formatCountry } from '@/lib/countries';
 import { displayName, PROFILE_SUMMARY, type Profile, type ProfileSummary } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -49,9 +50,11 @@ export default function ProfileScreen() {
           <View style={styles.header}>
             <Avatar profile={profile} size={88} />
             <ThemedText type="subtitle">{displayName(profile)}</ThemedText>
-            {profile?.city && (
-              <ThemedText themeColor="textSecondary">📍 {profile.city}</ThemedText>
-            )}
+            <ThemedText themeColor="textSecondary">
+              {[profile?.city && `📍 ${profile.city}`, formatCountry(profile?.country)]
+                .filter(Boolean)
+                .join(' · ')}
+            </ThemedText>
           </View>
 
           {profile?.bio && <ThemedText style={styles.bio}>{profile.bio}</ThemedText>}

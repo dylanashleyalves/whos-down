@@ -16,6 +16,7 @@ const REASONS = {
   unsafe: 'Unsafe behaviour at a meetup',
   fake: 'Fake profile',
   underage: 'Under 18',
+  not_a_guy: 'Not a guy',
   spam: 'Spam, selling or scams',
   other: 'Something else',
 } as const;

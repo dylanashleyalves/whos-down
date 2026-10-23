@@ -17,7 +17,9 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Categories, formatDay, formatTime, type Category } from '@/lib/activities';
+import { formatCountry } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/providers/auth-provider';
 
 const DAYS_AHEAD = 7;
 const FIRST_HOUR = 6;
@@ -45,6 +47,7 @@ function timeSlots(day: Date) {
 
 export default function NewActivityScreen() {
   const theme = useTheme();
+  const { profile } = useAuth();
   const days = useMemo(() => nextDays(), []);
 
   const [title, setTitle] = useState('');
@@ -133,6 +136,9 @@ export default function NewActivityScreen() {
               value={location}
               onChangeText={setLocation}
             />
+            <ThemedText type="small" themeColor="textSecondary">
+              Only people in {formatCountry(profile?.country) ?? 'your country'} will see this.
+            </ThemedText>
           </Field>
 
           <Field label="When?">

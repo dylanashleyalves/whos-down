@@ -5,6 +5,10 @@ import { Spacing } from '@/constants/theme';
 
 const RULES = [
   {
+    title: 'For guys',
+    body: "Who's Down is a space for men to make friends. Only sign up if you're a guy.",
+  },
+  {
     title: '18+ only',
     body: "Who's Down is for adults. Don't sign up or invite anyone under 18.",
   },
@@ -18,7 +22,7 @@ const RULES = [
   },
   {
     title: 'Meet in public',
-    body: 'Pick public places like parks, gyms, cafés and venues, especially the first time you meet someone.',
+    body: 'Pick public places like parks, gyms, cafés and venues, especially the first time you meet someone. Activities are only shown to people in the same country.',
   },
   {
     title: 'Show up or speak up',
