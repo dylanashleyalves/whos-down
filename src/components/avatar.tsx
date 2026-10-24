@@ -1,10 +1,19 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import type { ProfileSummary } from '@/lib/profiles';
+
+// Backgrounds for people without a photo. White text reads well on all of them.
+const COLORS = ['#3c87f7', '#e5484d', '#30a46c', '#f76b15', '#8e4ec6', '#0d9488', '#d6409f'];
+
+// The same name always gets the same colour.
+function colorFor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return COLORS[Math.abs(hash) % COLORS.length];
+}
 
 type AvatarProps = {
   profile: Pick<ProfileSummary, 'display_name' | 'avatar_url'> | null | undefined;
@@ -29,13 +38,16 @@ export function Avatar({ profile, size = 40 }: AvatarProps) {
     );
   }
 
-  const initial = profile?.display_name?.trim().charAt(0).toUpperCase() || '?';
+  const name = profile?.display_name?.trim() ?? '';
+  const initial = name.charAt(0).toUpperCase() || '?';
   return (
-    <ThemedView type="backgroundSelected" style={[styles.fallback, shape]}>
-      <ThemedText type="smallBold" style={{ fontSize: size * 0.4, lineHeight: size * 0.5 }}>
+    <View style={[styles.fallback, shape, { backgroundColor: colorFor(name) }]}>
+      <ThemedText
+        type="smallBold"
+        style={[styles.initial, { fontSize: size * 0.4, lineHeight: size * 0.5 }]}>
         {initial}
       </ThemedText>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -43,5 +55,8 @@ const styles = StyleSheet.create({
   fallback: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  initial: {
+    color: '#ffffff',
   },
 });

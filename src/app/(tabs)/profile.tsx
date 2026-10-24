@@ -10,7 +10,13 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { Categories } from '@/lib/activities';
 import { formatCountry } from '@/lib/countries';
-import { displayName, PROFILE_SUMMARY, type Profile, type ProfileSummary } from '@/lib/profiles';
+import {
+  displayName,
+  maskEmail,
+  PROFILE_SUMMARY,
+  type Profile,
+  type ProfileSummary,
+} from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -126,7 +132,7 @@ export default function ProfileScreen() {
           </Pressable>
 
           <ThemedText type="small" themeColor="textSecondary" style={styles.email}>
-            Signed in as {session?.user.email}
+            Signed in as {maskEmail(session?.user.email)}
           </ThemedText>
           <PrimaryButton
             label="Sign out"

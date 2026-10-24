@@ -57,6 +57,13 @@ function RootNavigator() {
           name="guidelines"
           options={{ headerShown: true, title: 'Community guidelines' }}
         />
+        {/* Sample-data screens for marketing screenshots. Never included in real builds. */}
+        <Stack.Protected guard={__DEV__}>
+          <Stack.Screen name="demo/feed" />
+          <Stack.Screen name="demo/activity" options={{ headerShown: true, title: 'Activity' }} />
+          <Stack.Screen name="demo/chat" options={{ headerShown: true, title: 'Group chat' }} />
+          <Stack.Screen name="demo/profile" />
+        </Stack.Protected>
       </Stack>
       {signedIn && hasProfile && <MessageAlerts />}
     </>

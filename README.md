@@ -27,15 +27,11 @@ But guys tend to bond **side by side, not face to face**: shooting hoops, liftin
 
 ## Screenshots
 
-<!--
-  Add screenshots to docs/screenshots/ and uncomment this table:
-
 | Feed | Activity | Group chat | Profile |
 | :---: | :---: | :---: | :---: |
-| <img src="docs/screenshots/feed.png" width="200" /> | <img src="docs/screenshots/activity.png" width="200" /> | <img src="docs/screenshots/chat.png" width="200" /> | <img src="docs/screenshots/profile.png" width="200" /> |
--->
+| <img src="docs/screenshots/feed.png" width="200" alt="Feed of upcoming activities" /> | <img src="docs/screenshots/activity.png" width="200" alt="Activity details with who's going" /> | <img src="docs/screenshots/chat.png" width="200" alt="Group chat for a basketball game" /> | <img src="docs/screenshots/profile.png" width="200" alt="Profile with crew" /> |
 
-_Screenshots coming soon._
+<sub>Screenshots use sample people and activities from the app's built-in demo screens (`src/app/demo`, development builds only).</sub>
 
 ## Features
 

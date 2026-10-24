@@ -56,6 +56,14 @@ export function ageOn(birthdate: Date, today = new Date()) {
 
 export const PROFILE_SUMMARY = 'id, display_name, avatar_url';
 
+// "dylan123@gmail.com" -> "d•••••••@gmail.com", so screenshots don't show the address.
+export function maskEmail(email: string | null | undefined) {
+  if (!email) return '';
+  const [name, domain] = email.split('@');
+  if (!domain) return email;
+  return `${name.charAt(0)}${'•'.repeat(Math.max(name.length - 1, 3))}@${domain}`;
+}
+
 export function displayName(profile: Pick<Profile, 'display_name'> | null | undefined) {
   return profile?.display_name ?? 'Someone';
 }
