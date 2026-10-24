@@ -36,7 +36,27 @@ function escapeHtml(text: string) {
     .replaceAll('"', '&quot;');
 }
 
-Deno.serve(async (request) => {
+// Resend only shows a new key once; copying it later gives a masked "re_••••" value.
+function resendKey() {
+  const key = (Deno.env.get('RESEND_API_KEY') ?? '').trim();
+  if (!/^[\x21-\x7e]+$/.test(key)) {
+    throw new Error(
+      'RESEND_API_KEY is missing or has invalid characters. Create a new key in Resend and copy it right away.'
+    );
+  }
+  return key;
+}
+
+// Typed by hand, so check it's a plain address (copying a masked one brings "•" along).
+function adminEmail() {
+  const email = (Deno.env.get('ADMIN_EMAIL') ?? '').trim();
+  if (!/^[\x21-\x7e]+@[\x21-\x7e]+\.[a-zA-Z]{2,}$/.test(email)) {
+    throw new Error('ADMIN_EMAIL is missing or not a plain email address. Type it in again by hand.');
+  }
+  return email;
+}
+
+async function handle(request: Request) {
   // Only the database webhook knows this secret.
   if (request.headers.get('x-webhook-secret') !== Deno.env.get('WEBHOOK_SECRET')) {
     return new Response('Unauthorized', { status: 401 });
@@ -78,20 +98,34 @@ Deno.serve(async (request) => {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+      Authorization: `Bearer ${resendKey()}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       from: "Who's Down <onboarding@resend.dev>",
-      to: Deno.env.get('ADMIN_EMAIL'),
+      to: adminEmail(),
       subject: `New report: ${reason}`,
       html: lines.filter(Boolean).join('\n'),
     }),
   });
 
   if (!response.ok) {
-    console.error('Resend error', response.status, await response.text());
-    return new Response('Email failed', { status: 502 });
+    // Resend's reply explains the problem, e.g. a recipient it won't send to.
+    const reason = await response.text();
+    console.error('Resend error', response.status, reason);
+    return new Response(`Email failed (Resend ${response.status}): ${reason}`, { status: 502 });
   }
   return new Response('Sent', { status: 200 });
+}
+
+// Reply with the error message on failure: the webhook stores replies in
+// net._http_response, which makes problems visible from the SQL Editor.
+Deno.serve(async (request) => {
+  try {
+    return await handle(request);
+  } catch (error) {
+    console.error(error);
+    const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    return new Response(`Error: ${message}`, { status: 500 });
+  }
 });
