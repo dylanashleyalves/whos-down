@@ -17,6 +17,10 @@ type AuthState = {
   profile: Profile | null;
   // Birthday and guidelines agreement; null until the user finishes setup.
   privateProfile: PrivateProfile | null;
+  // Can use the moderation screen (set from the SQL Editor only).
+  isAdmin: boolean;
+  // Banned by a moderator: can't post, join or chat.
+  isBanned: boolean;
   isLoading: boolean;
   refreshProfile: () => Promise<void>;
 };
@@ -25,19 +29,25 @@ const AuthContext = createContext<AuthState>({
   session: null,
   profile: null,
   privateProfile: null,
+  isAdmin: false,
+  isBanned: false,
   isLoading: true,
   refreshProfile: async () => {},
 });
 
 async function fetchProfile(userId: string) {
-  const [profile, privateProfile] = await Promise.all([
+  const [profile, privateProfile, admin, ban] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
     supabase.from('profile_private').select('*').eq('id', userId).maybeSingle(),
+    supabase.rpc('is_admin'),
+    supabase.from('bans').select('user_id').eq('user_id', userId).maybeSingle(),
   ]);
   return {
     userId,
     profile: profile.data as Profile | null,
     privateProfile: privateProfile.data as PrivateProfile | null,
+    isAdmin: admin.data === true,
+    isBanned: !!ban.data,
   };
 }
 
@@ -81,10 +91,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const profileLoaded = loaded !== null && loaded.userId === userId;
   const profile = userId && profileLoaded ? loaded.profile : null;
   const privateProfile = userId && profileLoaded ? loaded.privateProfile : null;
+  const isAdmin = !!userId && profileLoaded && loaded.isAdmin;
+  const isBanned = !!userId && profileLoaded && loaded.isBanned;
   const isLoading = !sessionLoaded || (!!userId && !profileLoaded);
 
   return (
-    <AuthContext.Provider value={{ session, profile, privateProfile, isLoading, refreshProfile }}>
+    <AuthContext.Provider
+      value={{ session, profile, privateProfile, isAdmin, isBanned, isLoading, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

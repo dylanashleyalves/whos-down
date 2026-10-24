@@ -21,7 +21,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
 export default function ProfileScreen() {
-  const { session, profile } = useAuth();
+  const { session, profile, isAdmin } = useAuth();
   const [crew, setCrew] = useState<Profile[]>([]);
   const [blocked, setBlocked] = useState<ProfileSummary[]>([]);
 
@@ -82,6 +82,10 @@ export default function ProfileScreen() {
             variant="secondary"
             onPress={() => router.push('/edit-profile')}
           />
+
+          {isAdmin && (
+            <PrimaryButton label="🛡️ Moderation" onPress={() => router.push('/admin')} />
+          )}
 
           <ThemedText type="smallBold">Your crew ({crew.length})</ThemedText>
           {crew.length === 0 ? (

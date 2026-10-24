@@ -4,13 +4,14 @@ import { useColorScheme } from 'react-native';
 
 import { MessageAlerts } from '@/components/message-alerts';
 import { AnimatedSplashOverlay } from '@/components/splash-overlay';
+import { SuspendedScreen } from '@/components/suspended-screen';
 import { isSetupComplete } from '@/lib/profiles';
 import { AuthProvider, useAuth } from '@/providers/auth-provider';
 
 SplashScreen.preventAutoHideAsync();
 
 function RootNavigator() {
-  const { session, profile, privateProfile, isLoading } = useAuth();
+  const { session, profile, privateProfile, isBanned, isLoading } = useAuth();
 
   // Keep the native splash screen up until we know who the user is.
   if (isLoading) return null;
@@ -20,6 +21,16 @@ function RootNavigator() {
   // Where blocked screens send people. Without this, Expo Router falls back to the
   // first open screen by file name, which is the guidelines page: a dead end.
   const home = !signedIn ? '/sign-in' : hasProfile ? '/' : '/onboarding';
+
+  if (signedIn && isBanned) {
+    return (
+      <>
+        {/* Still needed here: it's what hides the native splash screen. */}
+        <AnimatedSplashOverlay />
+        <SuspendedScreen />
+      </>
+    );
+  }
 
   return (
     <>
@@ -42,6 +53,7 @@ function RootNavigator() {
             options={{ presentation: 'modal', headerShown: true, title: 'Edit profile' }}
           />
           <Stack.Screen name="user/[id]" options={{ headerShown: true, title: 'Profile' }} />
+          <Stack.Screen name="admin" options={{ headerShown: true, title: 'Moderation' }} />
           <Stack.Screen
             name="report"
             options={{ presentation: 'modal', headerShown: true, title: 'Report' }}

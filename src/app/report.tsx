@@ -8,20 +8,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { REPORT_REASONS, type ReportReason } from '@/lib/reports';
 import { supabase } from '@/lib/supabase';
 
-const REASONS = {
-  harassment: 'Harassment or threats',
-  inappropriate: 'Inappropriate content',
-  unsafe: 'Unsafe behaviour at a meetup',
-  fake: 'Fake profile',
-  underage: 'Under 18',
-  not_a_guy: 'Not a guy',
-  spam: 'Spam, selling or scams',
-  other: 'Something else',
-} as const;
-
-type Reason = keyof typeof REASONS;
+const REASONS = REPORT_REASONS;
+type Reason = ReportReason;
 
 // Reports a person, an activity, or both. Reports go to the reports table for review.
 export default function ReportScreen() {
