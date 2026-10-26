@@ -48,6 +48,7 @@ function RootNavigator() {
           />
           <Stack.Screen name="activity/[id]" options={{ headerShown: true, title: 'Activity' }} />
           <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: 'Group chat' }} />
+          <Stack.Screen name="dm/[id]" options={{ headerShown: true, title: 'Message' }} />
           <Stack.Screen
             name="edit-profile"
             options={{ presentation: 'modal', headerShown: true, title: 'Edit profile' }}

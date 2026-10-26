@@ -11,6 +11,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { Categories } from '@/lib/activities';
 import { confirmAction } from '@/lib/confirm';
 import { formatCountry } from '@/lib/countries';
+import { canMessage } from '@/lib/dms';
 import { displayName, type Profile } from '@/lib/profiles';
 import { fetchUserStats, type UserStats } from '@/lib/ranks';
 import { supabase } from '@/lib/supabase';
@@ -25,19 +26,23 @@ export default function UserScreen() {
   const [person, setPerson] = useState<Profile | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [stats, setStats] = useState<UserStats | null>(null);
+  // Crew members can message each other.
+  const [inCrew, setInCrew] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [profile, block, theirStats] = await Promise.all([
+    const [profile, block, theirStats, crew] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
       supabase.from('blocks').select('blocked_id').eq('blocker_id', myId ?? '').eq('blocked_id', id),
       fetchUserStats(id),
+      myId && myId !== id ? canMessage(myId, id) : Promise.resolve(false),
     ]);
     if (profile.error) setError(profile.error.message);
     setPerson(profile.data as Profile | null);
     setBlocked((block.data ?? []).length > 0);
     setStats(theirStats);
+    setInCrew(crew);
   }, [id, myId]);
 
   useFocusEffect(
@@ -121,6 +126,9 @@ export default function UserScreen() {
 
         {!isMe && (
           <View style={styles.actions}>
+            {inCrew && (
+              <PrimaryButton label="💬 Message" onPress={() => router.push(`/dm/${id}`)} />
+            )}
             <PrimaryButton
               label="Report"
               variant="secondary"

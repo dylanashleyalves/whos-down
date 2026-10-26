@@ -126,6 +126,4 @@ export const DEMO_MESSAGES: Message[] = chat
     user_id: userId,
     body,
     created_at: new Date(Date.now() - minutesAgo * 60 * 1000).toISOString(),
-  }))
-  // Newest first, matching the inverted chat list.
-  .reverse();
+  }));

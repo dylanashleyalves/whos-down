@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -22,10 +22,10 @@ import { displayName, type ProfileSummary } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
-// Newest first, because the list is inverted (newest at the bottom).
+// Oldest first, so the newest message is at the bottom.
 function addMessage(messages: Message[], message: Message) {
   if (messages.some((m) => m.id === message.id)) return messages;
-  return [message, ...messages];
+  return [...messages, message];
 }
 
 export default function ChatScreen() {
@@ -38,6 +38,7 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const listRef = useRef<FlatList<Message>>(null);
 
   useEffect(() => {
     fetchActivity(id).then(setActivity, (e: Error) => setError(e.message));
@@ -50,7 +51,8 @@ export default function ChatScreen() {
       .limit(200)
       .then(({ data, error }) => {
         if (error) setError(error.message);
-        else setMessages(data as Message[]);
+        // Fetched newest first (to get the latest 200), shown oldest first.
+        else setMessages((data as Message[]).reverse());
       });
 
     // Live updates: new messages from everyone in the chat.
@@ -69,7 +71,7 @@ export default function ChatScreen() {
   }, [id]);
 
   // While the chat is open, everything in it counts as read (including new messages).
-  const latestId = messages[0]?.id;
+  const latestId = messages[messages.length - 1]?.id;
   useEffect(() => {
     markChatRead(id);
   }, [id, latestId]);
@@ -117,8 +119,10 @@ export default function ChatScreen() {
           )}
 
           <FlatList
-            inverted
+            ref={listRef}
             data={messages}
+            // Keep the newest message in view as messages load and arrive.
+            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             renderItem={({ item }) => {
@@ -225,8 +229,6 @@ const styles = StyleSheet.create({
   },
   empty: {
     textAlign: 'center',
-    // The list is inverted, so flip the empty message back upright.
-    transform: [{ scaleY: -1 }],
   },
   error: {
     color: '#e5484d',

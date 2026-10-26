@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import type { Message } from '@/lib/chat';
+import type { DirectMessage } from '@/lib/dms';
 import { displayName } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -13,14 +14,14 @@ import { useAuth } from '@/providers/auth-provider';
 const SHOW_FOR_MS = 5000;
 
 type Alert = {
-  activityId: string;
-  sender: string;
-  title: string;
+  // Where tapping the banner goes.
+  href: `/chat/${string}` | `/dm/${string}`;
+  heading: string;
   body: string;
 };
 
-// Pops up a banner at the top of the screen when a new chat message arrives while
-// the app is open. The database only sends messages from chats the user is in.
+// Pops up a banner at the top of the screen when a new group chat or direct message
+// arrives while the app is open. The database only sends messages the user can read.
 export function MessageAlerts() {
   const { session } = useAuth();
   const myId = session?.user.id;
@@ -50,12 +51,35 @@ export function MessageAlerts() {
           supabase.from('activities').select('title').eq('id', message.activity_id).maybeSingle(),
         ]);
         setAlert({
-          activityId: message.activity_id,
-          sender: displayName(sender.data),
-          title: (activity.data?.title as string | undefined) ?? 'Group chat',
+          href: `/chat/${message.activity_id}`,
+          heading: `${displayName(sender.data)} · ${(activity.data?.title as string | undefined) ?? 'Group chat'}`,
           body: message.body,
         });
       })
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'direct_messages',
+          filter: `recipient_id=eq.${myId}`,
+        },
+        async (payload) => {
+          const message = payload.new as DirectMessage;
+          if (pathnameRef.current === `/dm/${message.sender_id}`) return;
+
+          const sender = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', message.sender_id)
+            .maybeSingle();
+          setAlert({
+            href: `/dm/${message.sender_id}`,
+            heading: displayName(sender.data),
+            body: message.body,
+          });
+        }
+      )
       .subscribe();
 
     return () => {
@@ -77,11 +101,11 @@ export function MessageAlerts() {
       <Pressable
         onPress={() => {
           setAlert(null);
-          router.push(`/chat/${alert.activityId}`);
+          router.push(alert.href);
         }}
         style={({ pressed }) => [styles.banner, pressed && styles.pressed]}>
         <ThemedText type="smallBold" style={styles.text} numberOfLines={1}>
-          💬 {alert.sender} · {alert.title}
+          💬 {alert.heading}
         </ThemedText>
         <ThemedText type="small" style={styles.text} numberOfLines={2}>
           {alert.body}

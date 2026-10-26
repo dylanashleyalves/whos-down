@@ -44,6 +44,7 @@ But guys tend to bond **side by side, not face to face**: shooting hoops, liftin
 
 **Staying in touch**
 - Live **group chat** for each activity, for the host and everyone going
+- One-on-one messages with your crew (people who picked each other on "Hang again?"), with read receipts
 - In-app alerts and unread counts for new messages
 - **Hang again?** after an activity. Choices stay private unless both people pick each other, and then they join each other's **crew**
 - A friendly nudge for people who haven't been out in a week
@@ -110,7 +111,7 @@ supabase/
    npm install
    ```
 
-2. **Set up the database.** In your Supabase project, open **SQL Editor** and run each file in [`supabase/migrations`](supabase/migrations) in order (`0001` → `0008`).
+2. **Set up the database.** In your Supabase project, open **SQL Editor** and run each file in [`supabase/migrations`](supabase/migrations) in order (`0001` → `0009`).
 
 3. **Add your keys.** Copy `.env.example` to `.env.local` and fill in your Project URL and anon key from **Project Settings → API**.
 

@@ -23,7 +23,6 @@ export default function DemoChatScreen() {
         </ThemedText>
 
         <FlatList
-          inverted
           data={DEMO_MESSAGES}
           initialNumToRender={DEMO_MESSAGES.length}
           keyExtractor={(item) => item.id}
