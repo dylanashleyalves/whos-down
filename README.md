@@ -48,6 +48,12 @@ But guys tend to bond **side by side, not face to face**: shooting hoops, liftin
 - **Hang again?** after an activity. Choices stay private unless both people pick each other, and then they join each other's **crew**
 - A friendly nudge for people who haven't been out in a week
 
+**Ranks for showing up**
+- Hosts check in who actually came, so only real meetups count, and no-shows lose XP
+- XP for hosting, attending, meeting new people and seeing your crew again
+- Ranks from 🌱 Rookie to 🏆 Legend, based on the last 90 days, plus weekly streaks
+- Friendship levels with your crew (Met → Friend → Good friend → Day one) and a nudge when it's been a while
+
 **Built for safety from day one**
 - 18+ only: date of birth is checked at sign-up and stays private
 - Guys only (self-declared), with community guidelines everyone agrees to
@@ -104,7 +110,7 @@ supabase/
    npm install
    ```
 
-2. **Set up the database.** In your Supabase project, open **SQL Editor** and run each file in [`supabase/migrations`](supabase/migrations) in order (`0001` → `0007`).
+2. **Set up the database.** In your Supabase project, open **SQL Editor** and run each file in [`supabase/migrations`](supabase/migrations) in order (`0001` → `0008`).
 
 3. **Add your keys.** Copy `.env.example` to `.env.local` and fill in your Project URL and anon key from **Project Settings → API**.
 

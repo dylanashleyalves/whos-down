@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
+import { CheckInCard } from '@/components/check-in-card';
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -179,6 +180,10 @@ export default function ActivityScreen() {
               )
             }
           />
+        )}
+
+        {started && isParticipant && (
+          <CheckInCard activity={activity} myId={myId} onSaved={load} />
         )}
 
         <ThemedText type="smallBold">Who&apos;s going ({people.length})</ThemedText>

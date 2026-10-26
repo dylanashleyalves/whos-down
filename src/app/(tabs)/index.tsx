@@ -26,6 +26,7 @@ import {
   type Category,
 } from '@/lib/activities';
 import { fetchUnreadCounts } from '@/lib/chat';
+import { fetchXp } from '@/lib/ranks';
 import { formatCountry } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -86,6 +87,8 @@ export default function FeedScreen() {
   const [error, setError] = useState<string | null>(null);
   const [unread, setUnread] = useState<Map<string, number>>(new Map());
   const totalUnread = [...unread.values()].reduce((sum, n) => sum + n, 0);
+  // Hosts' recent XP, for the rank badges on cards.
+  const [hostXp, setHostXp] = useState<Map<string, number>>(new Map());
 
   const shown = filter ? activities.filter((a) => a.category === filter) : activities;
 
@@ -97,6 +100,7 @@ export default function FeedScreen() {
       ]);
       setActivities(result);
       setUnread(counts);
+      setHostXp(await fetchXp(result.map((a) => a.host_id)));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load activities.');
@@ -188,7 +192,12 @@ export default function FeedScreen() {
             contentContainerStyle={styles.list}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
             renderItem={({ item }) => (
-              <ActivityCard activity={item} myId={myId} unread={unread.get(item.id) ?? 0} />
+              <ActivityCard
+                activity={item}
+                myId={myId}
+                unread={unread.get(item.id) ?? 0}
+                hostXp={hostXp.get(item.host_id)}
+              />
             )}
             ListEmptyComponent={
               <ThemedView type="backgroundElement" style={styles.card}>

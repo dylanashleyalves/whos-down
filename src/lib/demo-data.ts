@@ -69,6 +69,7 @@ function activity(
     spots,
     details,
     created_at: '2026-10-20T00:00:00Z',
+    checked_in_at: null,
     host: summary(host),
     members: members.map((m) => ({ user_id: m.id, joined_at: startsAt, profile: summary(m) })),
   };

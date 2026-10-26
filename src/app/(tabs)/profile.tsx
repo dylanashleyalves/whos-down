@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { PrimaryButton } from '@/components/primary-button';
+import { RankCard } from '@/components/rank-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
@@ -17,22 +18,40 @@ import {
   type Profile,
   type ProfileSummary,
 } from '@/lib/profiles';
+import {
+  daysSince,
+  fetchCrewFriendships,
+  fetchUserStats,
+  friendshipLevel,
+  type CrewFriendship,
+  type UserStats,
+} from '@/lib/ranks';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
+
+// Suggest meeting a crew member again after this long apart.
+const NUDGE_AFTER_DAYS = 21;
 
 export default function ProfileScreen() {
   const { session, profile, isAdmin } = useAuth();
   const [crew, setCrew] = useState<Profile[]>([]);
   const [blocked, setBlocked] = useState<ProfileSummary[]>([]);
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [friendships, setFriendships] = useState<Map<string, CrewFriendship>>(new Map());
 
   const load = useCallback(async () => {
-    const [connections, blocks] = await Promise.all([
+    const userId = session?.user.id ?? '';
+    const [connections, blocks, myStats, crewFriendships] = await Promise.all([
       supabase.rpc('my_connections'),
       supabase
         .from('blocks')
         .select(`blocked:profiles!blocks_blocked_id_fkey(${PROFILE_SUMMARY})`)
-        .eq('blocker_id', session?.user.id ?? ''),
+        .eq('blocker_id', userId),
+      fetchUserStats(userId),
+      fetchCrewFriendships(),
     ]);
+    setStats(myStats);
+    setFriendships(crewFriendships);
     setCrew((connections.data as Profile[]) ?? []);
     const rows = (blocks.data ?? []) as unknown as { blocked: ProfileSummary | null }[];
     setBlocked(rows.flatMap((row) => (row.blocked ? [row.blocked] : [])));
@@ -77,6 +96,8 @@ export default function ProfileScreen() {
             </View>
           )}
 
+          {stats && <RankCard stats={stats} />}
+
           <PrimaryButton
             label="Edit profile"
             variant="secondary"
@@ -96,22 +117,31 @@ export default function ProfileScreen() {
               </ThemedText>
             </ThemedView>
           ) : (
-            crew.map((friend) => (
-              <Pressable
-                key={friend.id}
-                onPress={() => router.push(`/user/${friend.id}`)}
-                style={styles.friend}>
-                <Avatar profile={friend} />
-                <View>
-                  <ThemedText type="smallBold">{displayName(friend)}</ThemedText>
-                  {friend.city && (
+            crew.map((friend) => {
+              const together = friendships.get(friend.id);
+              const daysApart = together?.last_together ? daysSince(together.last_together) : null;
+              return (
+                <Pressable
+                  key={friend.id}
+                  onPress={() => router.push(`/user/${friend.id}`)}
+                  style={styles.friend}>
+                  <Avatar profile={friend} />
+                  <View style={styles.grow}>
+                    <ThemedText type="smallBold">{displayName(friend)}</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
-                      {friend.city}
+                      {friendshipLevel(together?.times_together ?? 0)}
+                      {daysApart !== null &&
+                        ` · ${daysApart === 0 ? 'hung out today' : `last hung out ${daysApart}d ago`}`}
                     </ThemedText>
-                  )}
-                </View>
-              </Pressable>
-            ))
+                    {daysApart !== null && daysApart >= NUDGE_AFTER_DAYS && (
+                      <ThemedText type="small" style={styles.nudge}>
+                        It&apos;s been a while. Who&apos;s down? 👋
+                      </ThemedText>
+                    )}
+                  </View>
+                </Pressable>
+              );
+            })
           )}
 
           {blocked.length > 0 && (
@@ -194,6 +224,9 @@ const styles = StyleSheet.create({
   },
   grow: {
     flex: 1,
+  },
+  nudge: {
+    color: '#3c87f7',
   },
   link: {
     alignSelf: 'center',

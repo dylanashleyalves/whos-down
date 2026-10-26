@@ -10,26 +10,32 @@ import {
   formatDay,
   formatTime,
   hasStarted,
+  needsCheckIn,
   spotsLeft,
   type ActivityWithPeople,
 } from '@/lib/activities';
 import { displayName } from '@/lib/profiles';
+import { rankFor } from '@/lib/ranks';
 
 type ActivityCardProps = {
   activity: ActivityWithPeople;
   myId?: string;
   unread?: number;
+  // The host's recent XP, to show their rank badge.
+  hostXp?: number;
   // Defaults to opening the activity.
   onPress?: () => void;
 };
 
-export function ActivityCard({ activity, myId, unread = 0, onPress }: ActivityCardProps) {
+export function ActivityCard({ activity, myId, unread = 0, hostXp, onPress }: ActivityCardProps) {
   const startsAt = new Date(activity.starts_at);
   const category = Categories[activity.category];
   const left = spotsLeft(activity);
   const badge =
     activity.host_id === myId
-      ? 'Your post'
+      ? needsCheckIn(activity)
+        ? '📋 Check in'
+        : 'Your post'
       : activity.members.some((m) => m.user_id === myId)
         ? "✓ You're in"
         : null;
@@ -66,6 +72,7 @@ export function ActivityCard({ activity, myId, unread = 0, onPress }: ActivityCa
             <Avatar profile={activity.host} size={24} />
             <ThemedText type="small" themeColor="textSecondary">
               {displayName(activity.host)}
+              {hostXp !== undefined && ` · ${rankFor(hostXp).emoji} ${rankFor(hostXp).name}`}
             </ThemedText>
           </View>
           <ThemedText type="smallBold" themeColor="textSecondary">

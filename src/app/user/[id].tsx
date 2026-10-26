@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { PrimaryButton } from '@/components/primary-button';
+import { RankCard } from '@/components/rank-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -11,6 +12,7 @@ import { Categories } from '@/lib/activities';
 import { confirmAction } from '@/lib/confirm';
 import { formatCountry } from '@/lib/countries';
 import { displayName, type Profile } from '@/lib/profiles';
+import { fetchUserStats, type UserStats } from '@/lib/ranks';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -22,17 +24,20 @@ export default function UserScreen() {
 
   const [person, setPerson] = useState<Profile | null>(null);
   const [blocked, setBlocked] = useState(false);
+  const [stats, setStats] = useState<UserStats | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [profile, block] = await Promise.all([
+    const [profile, block, theirStats] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
       supabase.from('blocks').select('blocked_id').eq('blocker_id', myId ?? '').eq('blocked_id', id),
+      fetchUserStats(id),
     ]);
     if (profile.error) setError(profile.error.message);
     setPerson(profile.data as Profile | null);
     setBlocked((block.data ?? []).length > 0);
+    setStats(theirStats);
   }, [id, myId]);
 
   useFocusEffect(
@@ -105,6 +110,8 @@ export default function UserScreen() {
             ))}
           </View>
         )}
+
+        {stats && <RankCard stats={stats} />}
 
         {error && (
           <ThemedText type="small" style={styles.error}>

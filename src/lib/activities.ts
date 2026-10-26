@@ -22,6 +22,8 @@ export type Activity = {
   spots: number;
   details: string | null;
   created_at: string;
+  // When the host confirmed who showed up (null until then).
+  checked_in_at: string | null;
 };
 
 export type Member = {
@@ -88,4 +90,16 @@ export function formatDay(date: Date) {
 
 export function formatTime(date: Date) {
   return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+// Hosts can confirm who showed up from the start until 7 days after.
+export const CHECK_IN_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function isCheckInOpen(activity: Pick<Activity, 'starts_at'>) {
+  const start = new Date(activity.starts_at).getTime();
+  return start <= Date.now() && Date.now() - start < CHECK_IN_WINDOW_MS;
+}
+
+export function needsCheckIn(activity: Pick<Activity, 'starts_at' | 'checked_in_at'>) {
+  return !activity.checked_in_at && isCheckInOpen(activity);
 }
