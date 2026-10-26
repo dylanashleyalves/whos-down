@@ -31,6 +31,8 @@ export type PrivateProfile = {
   accepted_guidelines_at: string;
   confirmed_guy_at: string | null;
   gender: Gender | null;
+  notifications_enabled: boolean;
+  last_seen_at: string | null;
 };
 
 export const MIN_AGE = 18;

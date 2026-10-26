@@ -2,7 +2,7 @@
   "expo": {
     "name": "Who's Down",
     "slug": "whos-down",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "whosdown",
@@ -39,7 +39,15 @@
         }
       ],
       "expo-localization",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#3C87F7",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

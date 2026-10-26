@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
@@ -26,6 +26,7 @@ import {
   type CrewFriendship,
   type UserStats,
 } from '@/lib/ranks';
+import { registerForPush, unregisterForPush } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -33,7 +34,17 @@ import { useAuth } from '@/providers/auth-provider';
 const NUDGE_AFTER_DAYS = 21;
 
 export default function ProfileScreen() {
-  const { session, profile, isAdmin } = useAuth();
+  const { session, profile, privateProfile, isAdmin, refreshProfile } = useAuth();
+  const notificationsOn = privateProfile?.notifications_enabled !== false;
+
+  async function setNotifications(on: boolean) {
+    await supabase
+      .from('profile_private')
+      .update({ notifications_enabled: on })
+      .eq('id', session?.user.id ?? '');
+    await refreshProfile();
+    if (on) registerForPush();
+  }
   const [crew, setCrew] = useState<Profile[]>([]);
   const [blocked, setBlocked] = useState<ProfileSummary[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -161,6 +172,20 @@ export default function ProfileScreen() {
             </>
           )}
 
+          <ThemedView type="backgroundElement" style={styles.setting}>
+            <View style={styles.grow}>
+              <ThemedText type="smallBold">Notifications</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Messages, people joining, and reminders before your activities.
+              </ThemedText>
+            </View>
+            <Switch
+              value={notificationsOn}
+              onValueChange={setNotifications}
+              trackColor={{ true: '#3c87f7' }}
+            />
+          </ThemedView>
+
           <Pressable onPress={() => router.push('/guidelines')} style={styles.link}>
             <ThemedText type="linkPrimary">Community guidelines</ThemedText>
           </Pressable>
@@ -171,7 +196,11 @@ export default function ProfileScreen() {
           <PrimaryButton
             label="Sign out"
             variant="secondary"
-            onPress={() => supabase.auth.signOut()}
+            onPress={async () => {
+              // Stop this phone getting the next person's notifications.
+              await unregisterForPush();
+              await supabase.auth.signOut();
+            }}
           />
         </ScrollView>
       </SafeAreaView>
@@ -227,6 +256,14 @@ const styles = StyleSheet.create({
   },
   nudge: {
     color: '#3c87f7',
+  },
+  setting: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    padding: Spacing.four,
+    borderRadius: Spacing.four,
+    marginTop: Spacing.three,
   },
   link: {
     alignSelf: 'center',

@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { MessageAlerts } from '@/components/message-alerts';
+import { PushSetup } from '@/components/push-setup';
 import { AnimatedSplashOverlay } from '@/components/splash-overlay';
 import { SuspendedScreen } from '@/components/suspended-screen';
 import { isSetupComplete } from '@/lib/profiles';
@@ -78,7 +79,12 @@ function RootNavigator() {
           <Stack.Screen name="demo/profile" />
         </Stack.Protected>
       </Stack>
-      {signedIn && hasProfile && <MessageAlerts />}
+      {signedIn && hasProfile && (
+        <>
+          <MessageAlerts />
+          <PushSetup />
+        </>
+      )}
     </>
   );
 }
