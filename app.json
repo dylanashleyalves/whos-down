@@ -19,7 +19,10 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.whosdown.app"
+      "package": "com.whosdown.app",
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "web": {
       "output": "server",
@@ -52,6 +55,9 @@
         "projectId": "b9deba71-74cc-4f48-8d51-0e1463f18d0b"
       }
     },
-    "owner": "dylanashleyalves"
+    "owner": "dylanashleyalves",
+    "updates": {
+      "url": "https://u.expo.dev/b9deba71-74cc-4f48-8d51-0e1463f18d0b"
+    }
   }
 }
