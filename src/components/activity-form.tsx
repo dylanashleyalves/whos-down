@@ -17,11 +17,13 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
+  Audiences,
   Categories,
   fetchNextPostTime,
   formatDay,
   formatTime,
   type ActivityWithPeople,
+  type Audience,
   type Category,
 } from '@/lib/activities';
 import { formatCountry } from '@/lib/countries';
@@ -68,7 +70,14 @@ type ActivityFormProps = {
 
 export function ActivityForm({ existing }: ActivityFormProps) {
   const theme = useTheme();
-  const { session, profile } = useAuth();
+  const { session, profile, privateProfile } = useAuth();
+  // Hosts can make an activity just for their own gender, or open it to everyone.
+  const audiences: Audience[] =
+    privateProfile?.gender === 'guy'
+      ? ['everyone', 'guys']
+      : privateProfile?.gender === 'girl'
+        ? ['everyone', 'girls']
+        : ['everyone'];
   const days = useMemo(() => nextDays(), []);
   const existingStart = existing ? new Date(existing.starts_at) : null;
   // Can't drop below the number of people who already joined.
@@ -76,6 +85,7 @@ export function ActivityForm({ existing }: ActivityFormProps) {
 
   const [title, setTitle] = useState(existing?.title ?? '');
   const [category, setCategory] = useState<Category>(existing?.category ?? 'sports');
+  const [audience, setAudience] = useState<Audience>(existing?.audience ?? 'everyone');
   const [location, setLocation] = useState(existing?.location ?? '');
   const [dayIndex, setDayIndex] = useState(() => initialDayIndex(days, existingStart));
   const [startsAt, setStartsAt] = useState<Date | null>(
@@ -123,6 +133,7 @@ export function ActivityForm({ existing }: ActivityFormProps) {
     const fields = {
       title: title.trim(),
       category,
+      audience,
       location: location.trim(),
       starts_at: startsAt.toISOString(),
       spots,
@@ -177,6 +188,21 @@ export function ActivityForm({ existing }: ActivityFormProps) {
               ))}
             </View>
           </Field>
+
+          {audiences.length > 1 && (
+            <Field label="Who's it for?">
+              <View style={styles.wrap}>
+                {audiences.map((key) => (
+                  <Chip
+                    key={key}
+                    label={`${Audiences[key].emoji} ${Audiences[key].label}`}
+                    selected={audience === key}
+                    onPress={() => setAudience(key)}
+                  />
+                ))}
+              </View>
+            </Field>
+          )}
 
           <Field label="Where?">
             <TextInput

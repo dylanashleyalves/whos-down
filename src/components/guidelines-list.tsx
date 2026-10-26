@@ -5,8 +5,8 @@ import { Spacing } from '@/constants/theme';
 
 const RULES = [
   {
-    title: 'For guys',
-    body: "Who's Down is a space for men to make friends. Only sign up if you're a guy.",
+    title: 'Be honest about who you are',
+    body: "Hosts can make activities for everyone, guys only, or girls only. Say truthfully whether you're a guy or a girl so those spaces stay what people signed up for.",
   },
   {
     title: '18+ only',

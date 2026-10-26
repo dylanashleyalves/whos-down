@@ -12,6 +12,16 @@ export const Categories = {
 
 export type Category = keyof typeof Categories;
 
+// Who an activity is for. Guys-only and girls-only ones are only shown to (and
+// joinable by) guys or girls; the database enforces it.
+export const Audiences = {
+  everyone: { label: 'Everyone', emoji: '🙌' },
+  guys: { label: 'Guys only', emoji: '👨' },
+  girls: { label: 'Girls only', emoji: '👩' },
+} as const;
+
+export type Audience = keyof typeof Audiences;
+
 export type Activity = {
   id: string;
   host_id: string;
@@ -24,6 +34,7 @@ export type Activity = {
   created_at: string;
   // When the host confirmed who showed up (null until then).
   checked_in_at: string | null;
+  audience: Audience;
 };
 
 export type Member = {

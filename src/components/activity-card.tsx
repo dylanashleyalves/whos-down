@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import {
+  Audiences,
   Categories,
   formatDay,
   formatTime,
@@ -48,6 +49,8 @@ export function ActivityCard({ activity, myId, unread = 0, hostXp, onPress }: Ac
         <View style={styles.top}>
           <ThemedText type="small" themeColor="textSecondary">
             {category.emoji} {category.label}
+            {activity.audience !== 'everyone' &&
+              ` · ${Audiences[activity.audience].emoji} ${Audiences[activity.audience].label}`}
           </ThemedText>
           {badge && (
             <ThemedText type="smallBold" themeColor="textSecondary">

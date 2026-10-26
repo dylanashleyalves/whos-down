@@ -5,8 +5,8 @@
 <h1 align="center">Who's Down</h1>
 
 <p align="center">
-  <strong>Find guys nearby to play, lift, game and hang out with.</strong><br />
-  An activity-first mobile app that helps men make friends by doing things together.
+  <strong>Find people nearby to play, lift, game and hang out with.</strong><br />
+  An activity-first mobile app that helps people make friends by doing things together.
 </p>
 
 <p align="center">
@@ -24,6 +24,8 @@
 A lot of guys find it hard to make new friends after school, after moving to a new city, or once their old friends get busy. Most friend-finding apps copy dating apps: you swipe, match, send an awkward "hey", and nothing happens.
 
 But guys tend to bond **side by side, not face to face**: shooting hoops, lifting, gaming, grabbing food. So Who's Down skips the profiles-first approach and starts with **plans**. Someone posts "Pickup basketball Saturday, need 4 more", people nearby tap **I'm down**, and they show up. After the activity, if two people both tap **Hang again?**, they're added to each other's crew. That's how one-off meetups turn into friendships.
+
+It started with guys in mind, and it's open to everyone: hosts can keep an activity guys-only or girls-only when that's what people want, or open it to all.
 
 ## Screenshots
 
@@ -57,7 +59,7 @@ But guys tend to bond **side by side, not face to face**: shooting hoops, liftin
 
 **Built for safety from day one**
 - 18+ only: date of birth is checked at sign-up and stays private
-- Guys only (self-declared), with community guidelines everyone agrees to
+- Open to everyone: hosts choose whether each activity is for everyone, guys only, or girls only (gender is private and only used for this), with community guidelines everyone agrees to
 - Activities are only visible to, and joinable by, people in the **same country**
 - **Report** people or activities, and **block** people both ways (hides activities and messages, blocks joins)
 - One new post per person per day, to stop spam

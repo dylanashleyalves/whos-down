@@ -21,7 +21,14 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Categories, type Category } from '@/lib/activities';
 import { deviceCountry } from '@/lib/countries';
-import { ageOn, MIN_AGE, parseBirthdate, uploadAvatar } from '@/lib/profiles';
+import {
+  ageOn,
+  GENDERS,
+  MIN_AGE,
+  parseBirthdate,
+  uploadAvatar,
+  type Gender,
+} from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -34,13 +41,13 @@ type ProfileFormProps = {
 export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) {
   const theme = useTheme();
   const { session, profile, privateProfile, refreshProfile } = useAuth();
-  // Birthday, guidelines and "I'm a guy" are asked once, during setup.
+  // Birthday, guidelines and gender are asked once, during setup.
   const needsSetup = !privateProfile;
-  const needsGuyConfirmation = !privateProfile?.confirmed_guy_at;
+  const needsGender = !privateProfile?.gender;
 
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '');
   const [country, setCountry] = useState<string | null>(profile?.country ?? deviceCountry());
-  const [isGuy, setIsGuy] = useState(false);
+  const [gender, setGender] = useState<Gender | null>(null);
   const [birthDay, setBirthDay] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthYear, setBirthYear] = useState('');
@@ -83,8 +90,8 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
       setError('Pick your country.');
       return;
     }
-    if (needsGuyConfirmation && !isGuy) {
-      setError("Who's Down is for guys. Confirm you're a guy to continue.");
+    if (needsGender && !gender) {
+      setError('Choose whether you’re a guy or a girl, or prefer not to say.');
       return;
     }
 
@@ -123,18 +130,17 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
       });
       if (error) throw error;
 
-      const confirmedGuyAt = new Date().toISOString();
       if (needsSetup && birthdate) {
         const { error } = await supabase.from('profile_private').upsert({
           id: userId,
           birthdate: birthdate.toISOString().slice(0, 10),
-          confirmed_guy_at: confirmedGuyAt,
+          gender,
         });
         if (error) throw error;
-      } else if (needsGuyConfirmation) {
+      } else if (needsGender) {
         const { error } = await supabase
           .from('profile_private')
-          .update({ confirmed_guy_at: confirmedGuyAt })
+          .update({ gender })
           .eq('id', userId);
         if (error) throw error;
       }
@@ -221,12 +227,23 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
             />
           </Field>
 
-          {needsGuyConfirmation && (
-            <Checkbox
-              checked={isGuy}
-              onToggle={() => setIsGuy(!isGuy)}
-              label="I'm a guy. Who's Down is a space for men to make friends."
-            />
+          {needsGender && (
+            <Field label="I am a">
+              <View style={styles.wrap}>
+                {(Object.keys(GENDERS) as Gender[]).map((key) => (
+                  <Chip
+                    key={key}
+                    label={GENDERS[key]}
+                    selected={gender === key}
+                    onPress={() => setGender(key)}
+                  />
+                ))}
+              </View>
+              <ThemedText type="small" themeColor="textSecondary">
+                Only you can see this. It decides whether you see guys-only or girls-only
+                activities. Everyone sees activities open to all.
+              </ThemedText>
+            </Field>
           )}
 
           {needsSetup && (

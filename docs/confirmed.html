@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Email confirmed · Who's Down</title>
+    <!--
+      Where Supabase sends people after they tap the link in their confirmation email.
+      Set it as the Site URL in Supabase: Authentication -> URL Configuration.
+    -->
+    <style>
+      :root {
+        --bg: #ffffff;
+        --text: #000000;
+        --muted: #60646c;
+        --card: #f0f0f3;
+        --brand: #3c87f7;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #000000;
+          --text: #ffffff;
+          --muted: #b0b4ba;
+          --card: #212225;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 16px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      main {
+        width: 100%;
+        max-width: 420px;
+        text-align: center;
+      }
+      .logo {
+        width: 88px;
+        height: 88px;
+        border-radius: 22px;
+      }
+      h1 {
+        font-size: 28px;
+        margin: 24px 0 8px;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.5;
+        margin: 0 0 16px;
+      }
+      .card {
+        background: var(--card);
+        border-radius: 16px;
+        padding: 16px;
+        margin-top: 24px;
+        text-align: left;
+      }
+      .card p {
+        margin: 0;
+      }
+      .error h1 {
+        color: #e5484d;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img class="logo" src="icon.png" alt="" onerror="this.remove()" />
+
+      <section id="ok">
+        <h1>Email confirmed ✅</h1>
+        <p>You're all set. Go back to the Who's Down app and sign in with your email and password.</p>
+        <div class="card">
+          <p><strong>Next:</strong> set up your profile, find an activity near you, and tap "I'm down".</p>
+        </div>
+      </section>
+
+      <section id="failed" class="error hidden">
+        <h1>That link didn't work</h1>
+        <p id="reason">The confirmation link has expired or was already used.</p>
+        <p>
+          Try signing in to the app anyway: if your email was already confirmed, it will work. If not,
+          sign up again with the same email to get a new link.
+        </p>
+      </section>
+    </main>
+
+    <script>
+      // Supabase adds error details to the address when a link is expired or invalid.
+      const params = new URLSearchParams(location.hash.slice(1) + '&' + location.search.slice(1));
+      if (params.get('error')) {
+        document.getElementById('ok').classList.add('hidden');
+        document.getElementById('failed').classList.remove('hidden');
+        const description = params.get('error_description');
+        if (description) document.getElementById('reason').textContent = description + '.';
+      }
+    </script>
+  </body>
+</html>

@@ -15,20 +15,30 @@ export type Profile = {
 
 export type ProfileSummary = Pick<Profile, 'id' | 'display_name' | 'avatar_url'>;
 
+// Private: only used to decide who can see guys-only or girls-only activities.
+export const GENDERS = {
+  guy: 'Guy',
+  girl: 'Girl',
+  unspecified: 'Prefer not to say',
+} as const;
+
+export type Gender = keyof typeof GENDERS;
+
 // Only visible to the user themselves.
 export type PrivateProfile = {
   id: string;
   birthdate: string;
   accepted_guidelines_at: string;
   confirmed_guy_at: string | null;
+  gender: Gender | null;
 };
 
 export const MIN_AGE = 18;
 
-// Setup is done once they have a name and country, confirmed their age and that
-// they're a guy, and agreed to the guidelines.
+// Setup is done once they have a name and country, confirmed their age, said whether
+// they're a guy or a girl (or neither), and agreed to the guidelines.
 export function isSetupComplete(profile: Profile | null, privateProfile: PrivateProfile | null) {
-  return !!profile?.display_name && !!profile.country && !!privateProfile?.confirmed_guy_at;
+  return !!profile?.display_name && !!profile.country && !!privateProfile?.gender;
 }
 
 // Builds a real calendar date from what the user typed, or null if it isn't one.

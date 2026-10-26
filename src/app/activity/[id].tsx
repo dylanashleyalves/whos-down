@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import {
+  Audiences,
   Categories,
   fetchActivity,
   formatDay,
@@ -116,6 +117,8 @@ export default function ActivityScreen() {
         <ThemedView type="backgroundElement" style={styles.card}>
           <ThemedText type="small" themeColor="textSecondary">
             {category.emoji} {category.label}
+            {activity.audience !== 'everyone' &&
+              ` · ${Audiences[activity.audience].emoji} ${Audiences[activity.audience].label}`}
           </ThemedText>
           <ThemedText type="subtitle" style={styles.title}>
             {activity.title}

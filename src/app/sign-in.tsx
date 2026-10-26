@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,6 +23,7 @@ export default function SignInScreen() {
   const [mode, setMode] = useState<Mode>('sign-in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -59,7 +61,7 @@ export default function SignInScreen() {
           style={styles.form}>
           <ThemedText type="title">Who&apos;s down?</ThemedText>
           <ThemedText themeColor="textSecondary">
-            Find guys nearby to play, lift, game and hang out with.
+            Find people nearby to play, lift, game and hang out with.
           </ThemedText>
 
           <TextInput
@@ -72,15 +74,26 @@ export default function SignInScreen() {
             value={email}
             onChangeText={setEmail}
           />
-          <TextInput
-            style={inputStyle}
-            placeholder="Password"
-            placeholderTextColor={theme.textSecondary}
-            secureTextEntry
-            autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
-            value={password}
-            onChangeText={setPassword}
-          />
+          <View>
+            <TextInput
+              style={[inputStyle, styles.passwordInput]}
+              placeholder={mode === 'sign-up' ? 'Password (6+ characters)' : 'Password'}
+              placeholderTextColor={theme.textSecondary}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <Pressable
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.showPassword}
+              accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {showPassword ? 'Hide' : 'Show'}
+              </ThemedText>
+            </Pressable>
+          </View>
 
           {message && (
             <ThemedText type="small" themeColor="textSecondary">
@@ -138,6 +151,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     gap: Spacing.three,
+  },
+  passwordInput: {
+    // Room for the Show/Hide button.
+    paddingRight: 64,
+  },
+  showPassword: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
   },
   input: {
     paddingVertical: Spacing.three,

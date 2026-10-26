@@ -23,7 +23,7 @@ const REASONS: Record<string, string> = {
   unsafe: 'Unsafe behaviour at a meetup',
   fake: 'Fake profile',
   underage: 'Under 18',
-  not_a_guy: 'Not a guy',
+  not_a_guy: 'Lying about being a guy or girl',
   spam: 'Spam, selling or scams',
   other: 'Something else',
 };
