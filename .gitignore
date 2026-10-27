@@ -44,3 +44,7 @@ example
 
 # Supabase CLI local state
 supabase/.temp/
+
+# Firebase service account keys are private (google-services.json is fine to commit)
+*-firebase-adminsdk-*.json
+service-account*.json

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1018650751423",
+    "project_id": "whos-down-e3802",
+    "storage_bucket": "whos-down-e3802.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1018650751423:android:39b6ae842d3b5c5a84710a",
+        "android_client_info": {
+          "package_name": "com.whosdown.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxqW1nP1noP7BX4fjP3vP6wtgG0rFmHRo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
