@@ -14,6 +14,7 @@ import { formatCountry } from '@/lib/countries';
 import { canMessage } from '@/lib/dms';
 import { displayName, type Profile } from '@/lib/profiles';
 import { fetchUserStats, type UserStats } from '@/lib/ranks';
+import { shareProfile } from '@/lib/share';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -117,6 +118,12 @@ export default function UserScreen() {
         )}
 
         {stats && <RankCard stats={stats} />}
+
+        <PrimaryButton
+          label="📤 Share profile"
+          variant="secondary"
+          onPress={() => shareProfile(person, stats?.xp_recent ?? null, isMe)}
+        />
 
         {error && (
           <ThemedText type="small" style={styles.error}>

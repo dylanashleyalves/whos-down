@@ -20,6 +20,7 @@ import {
 } from '@/lib/activities';
 import { confirmAction } from '@/lib/confirm';
 import { displayName, type ProfileSummary } from '@/lib/profiles';
+import { shareActivity } from '@/lib/share';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -52,7 +53,12 @@ export default function ActivityScreen() {
         setHangAgain(new Set((data ?? []).map((row) => row.to_user as string)));
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load this activity.');
+      // Usually opened from a shared link: it's been deleted, or the database hides it
+      // (another country, a guys- or girls-only activity, or a blocked host).
+      console.warn('Could not load activity', e);
+      setError(
+        "This activity isn't available. It may have been deleted, or it's for a different group or country."
+      );
     }
   }, [id, myId]);
 
@@ -167,6 +173,12 @@ export default function ActivityScreen() {
         {isParticipant && (
           <PrimaryButton label="💬 Open group chat" onPress={() => router.push(`/chat/${activity.id}`)} />
         )}
+
+        <PrimaryButton
+          label={isHost ? '📤 Invite friends' : '📤 Share activity'}
+          variant="secondary"
+          onPress={() => shareActivity(activity)}
+        />
 
         {!started && isMember && (
           <PrimaryButton

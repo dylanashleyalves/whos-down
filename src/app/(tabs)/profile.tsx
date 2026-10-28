@@ -27,6 +27,7 @@ import {
   type UserStats,
 } from '@/lib/ranks';
 import { registerForPush, unregisterForPush } from '@/lib/notifications';
+import { shareProfile } from '@/lib/share';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -108,6 +109,13 @@ export default function ProfileScreen() {
           )}
 
           {stats && <RankCard stats={stats} />}
+
+          {profile && (
+            <PrimaryButton
+              label="📤 Share my profile"
+              onPress={() => shareProfile(profile, stats?.xp_recent ?? null, true)}
+            />
+          )}
 
           <PrimaryButton
             label="Edit profile"

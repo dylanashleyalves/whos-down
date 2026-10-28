@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Who's Down</title>
+    <meta name="description" content="Find people nearby to play, lift, game and hang out with." />
+    <meta property="og:title" content="Who's Down" />
+    <meta property="og:description" content="Find people nearby to play, lift, game and hang out with." />
+    <meta property="og:image" content="https://dylanashleyalves.github.io/whos-down/icon.png" />
+    <!--
+      Shared links land here: open.html?u=<profile id> or open.html?a=<activity id>.
+      It opens the app if it's installed, otherwise offers the download. It never shows
+      anyone's details: profiles and activities are only visible inside the app.
+    -->
+    <style>
+      :root {
+        --bg: #ffffff;
+        --text: #000000;
+        --muted: #60646c;
+        --card: #f0f0f3;
+        --brand: #3c87f7;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #000000;
+          --text: #ffffff;
+          --muted: #b0b4ba;
+          --card: #212225;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 16px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      main {
+        width: 100%;
+        max-width: 420px;
+        text-align: center;
+      }
+      .logo {
+        width: 88px;
+        height: 88px;
+        border-radius: 22px;
+      }
+      h1 {
+        font-size: 26px;
+        margin: 24px 0 8px;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.5;
+        margin: 0 0 16px;
+      }
+      .button {
+        display: block;
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        margin-top: 12px;
+      }
+      .primary {
+        background: var(--brand);
+        color: #ffffff;
+      }
+      .secondary {
+        background: var(--card);
+        color: var(--text);
+      }
+      .note {
+        font-size: 13px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img class="logo" src="icon.png" alt="" onerror="this.remove()" />
+      <h1 id="title">You've been invited to Who's Down</h1>
+      <p id="subtitle">Find people nearby to play, lift, game and hang out with.</p>
+
+      <a id="open" class="button primary" href="#">Open in Who's Down</a>
+      <a id="download" class="button secondary" href="#">Get the app</a>
+
+      <p class="note">Don't have the app yet? Download it, sign up, then tap the link again.</p>
+    </main>
+
+    <script>
+      // Where "Get the app" goes. Update this when the app is on the Play Store.
+      const DOWNLOAD_URL =
+        'https://expo.dev/accounts/dylanashleyalves/projects/whos-down/builds/50a057de-1608-4d58-b4aa-b3d668a19e3f';
+      const PACKAGE = 'com.whosdown.app';
+
+      const params = new URLSearchParams(location.search);
+      // Ids are UUIDs; anything else is ignored.
+      const isId = (value) => /^[0-9a-f-]{36}$/i.test(value || '');
+      const user = params.get('u');
+      const activity = params.get('a');
+      const path = isId(user) ? `user/${user}` : isId(activity) ? `activity/${activity}` : '';
+
+      if (isId(user)) {
+        document.getElementById('title').textContent = 'Someone shared a profile with you';
+        document.getElementById('subtitle').textContent =
+          'Open it in Who’s Down to see who they are and what they’re into.';
+      } else if (isId(activity)) {
+        document.getElementById('title').textContent = 'Who’s down?';
+        document.getElementById('subtitle').textContent =
+          'You’ve been invited to an activity. Open it in Who’s Down to see the details and join.';
+      }
+
+      // On Android, an intent link opens the app if it's installed, and otherwise
+      // falls back to the download page. Elsewhere, use the app's own link scheme.
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      const openUrl = isAndroid
+        ? `intent://${path}#Intent;scheme=whosdown;package=${PACKAGE};S.browser_fallback_url=${encodeURIComponent(DOWNLOAD_URL)};end`
+        : `whosdown://${path}`;
+
+      document.getElementById('open').href = openUrl;
+      document.getElementById('download').href = DOWNLOAD_URL;
+
+      // Try opening the app straight away; the buttons stay as a fallback.
+      if (path) location.href = openUrl;
+    </script>
+  </body>
