@@ -1,4 +1,5 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { isRunningInExpoGo } from 'expo';
 import * as Device from 'expo-device';
 import type * as NotificationsModule from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -10,29 +11,36 @@ export function canUsePush() {
   return (
     Platform.OS !== 'web' &&
     Device.isDevice &&
+    !isRunningInExpoGo() &&
     Constants.executionEnvironment !== ExecutionEnvironment.StoreClient
   );
 }
 
-let loaded: Promise<typeof NotificationsModule> | null = null;
+let loaded: Promise<typeof NotificationsModule | null> | null = null;
 
 // expo-notifications is only loaded in real builds: just importing it crashes Expo Go
-// on Android, which doesn't include its native modules.
-function notifications() {
+// on Android, which doesn't include its native modules. If loading fails anyway, the
+// app carries on without push notifications instead of crashing.
+async function notifications() {
   if (!canUsePush()) return null;
-  loaded ??= import('expo-notifications').then((module) => {
-    // The app already shows its own banner for new messages while it's open, so don't
-    // also show the system one then.
-    module.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowBanner: false,
-        shouldShowList: true,
-        shouldPlaySound: false,
-        shouldSetBadge: false,
-      }),
+  loaded ??= import('expo-notifications')
+    .then((module) => {
+      // The app already shows its own banner for new messages while it's open, so don't
+      // also show the system one then.
+      module.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowBanner: false,
+          shouldShowList: true,
+          shouldPlaySound: false,
+          shouldSetBadge: false,
+        }),
+      });
+      return module;
+    })
+    .catch((error) => {
+      console.warn('Push notifications are unavailable here', error);
+      return null;
     });
-    return module;
-  });
   return loaded;
 }
 
@@ -85,7 +93,8 @@ export function onNotificationTap(onOpen: (href: string) => void) {
   let stopped = false;
   let subscription: { remove: () => void } | null = null;
 
-  notifications()?.then(async (Notifications) => {
+  notifications().then(async (Notifications) => {
+    if (!Notifications) return;
     const open = (response: NotificationsModule.NotificationResponse | null) => {
       if (!response || response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
       const href = response.notification.request.content.data?.href;
