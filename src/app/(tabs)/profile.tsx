@@ -4,6 +4,10 @@ import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { EmptyState } from '@/components/empty-state';
+import { FeedbackBox } from '@/components/feedback-box';
+import { showIntro } from '@/components/intro-cards';
+import { ProfileChecklist } from '@/components/profile-checklist';
 import { AvatarRing } from '@/components/avatar-ring';
 import { Pill } from '@/components/pill';
 import { ProfileCover } from '@/components/profile-cover';
@@ -120,6 +124,8 @@ export default function ProfileScreen() {
             </View>
           )}
 
+          {profile && <ProfileChecklist profile={profile} />}
+
           {stats && <RankCard stats={stats} />}
 
           {profile && (
@@ -139,12 +145,15 @@ export default function ProfileScreen() {
 
           <ThemedText type="smallBold">Your crew ({crew.length})</ThemedText>
           {crew.length === 0 ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="small" themeColor="textSecondary">
-                After an activity, tap &quot;Hang again?&quot; on the people you&apos;d meet up with
-                again. When they pick you too, they show up here.
-              </ThemedText>
-            </ThemedView>
+            <EmptyState
+              emoji="🤝"
+              color="#22C55E"
+              title="Your crew is empty, for now"
+              text={
+                'After a meetup, tap "Hang again?" on the people you’d see again. When they pick you too, they join your crew and you can message them.'
+              }
+              action={{ label: 'Find an activity', onPress: () => router.navigate('/') }}
+            />
           ) : (
             crew.map((friend) => {
               const together = friendships.get(friend.id);
@@ -204,6 +213,11 @@ export default function ProfileScreen() {
             />
           </ThemedView>
 
+          <FeedbackBox />
+
+          <Pressable onPress={showIntro} style={styles.link}>
+            <ThemedText type="linkPrimary">How Who&apos;s Down works</ThemedText>
+          </Pressable>
           <Pressable onPress={() => router.push('/guidelines')} style={styles.link}>
             <ThemedText type="linkPrimary">Community guidelines</ThemedText>
           </Pressable>
@@ -254,10 +268,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: Spacing.two,
-  },
-  card: {
-    padding: Spacing.four,
-    borderRadius: Spacing.four,
   },
   friend: {
     flexDirection: 'row',

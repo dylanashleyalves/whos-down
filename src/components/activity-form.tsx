@@ -28,6 +28,7 @@ import {
 } from '@/lib/activities';
 import { formatCountry } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
+import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/auth-provider';
 
 const DAYS_AHEAD = 7;
@@ -62,6 +63,28 @@ function initialDayIndex(days: Date[], existing: Date | null) {
   // Start on today, or tomorrow if it's too late for any slots today.
   return timeSlots(days[0]).length > 0 ? 0 : 1;
 }
+
+// One-tap starting points, so a first post takes seconds. People still add where and when.
+const QUICK_STARTS: { title: string; category: Category; spots: number; details?: string }[] = [
+  {
+    title: '🏀 Pickup basketball, need 4 more',
+    category: 'sports',
+    spots: 4,
+    details: 'All levels welcome.',
+  },
+  { title: '🏋️ Gym session, looking for a buddy', category: 'gym', spots: 1 },
+  { title: '☕ Coffee and a chat', category: 'hangout', spots: 2 },
+  { title: '🍜 Supper run, who’s hungry?', category: 'food', spots: 3 },
+  { title: '🎮 Gaming night, need a squad', category: 'gaming', spots: 3 },
+  {
+    title: '🥾 Easy weekend hike',
+    category: 'outdoors',
+    spots: 4,
+    details: 'Bring water and comfy shoes.',
+  },
+  { title: '🏸 Badminton doubles', category: 'sports', spots: 3 },
+  { title: '🎳 Bowling or arcade', category: 'hangout', spots: 4 },
+];
 
 type ActivityFormProps = {
   // When given, the form edits this activity instead of posting a new one.
@@ -147,6 +170,7 @@ export function ActivityForm({ existing }: ActivityFormProps) {
     if (error) {
       setError(error.message);
     } else {
+      showToast(existing ? 'Changes saved ✓' : "Posted! 🎉 We'll let you know when people join");
       router.back();
     }
   }
@@ -166,6 +190,34 @@ export function ActivityForm({ existing }: ActivityFormProps) {
             <ThemedView type="backgroundElement" style={styles.notice}>
               <ThemedText type="small">⏳ {limitMessage}</ThemedText>
             </ThemedView>
+          )}
+
+          {!existing && (
+            <Field label="Quick start">
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.row}>
+                {QUICK_STARTS.map((quick) => (
+                  <Chip
+                    key={quick.title}
+                    label={quick.title}
+                    color={Categories[quick.category].color}
+                    selected={title === quick.title}
+                    onPress={() => {
+                      setTitle(quick.title);
+                      setCategory(quick.category);
+                      setSpots(quick.spots);
+                      setDetails(quick.details ?? '');
+                      setError(null);
+                    }}
+                  />
+                ))}
+              </ScrollView>
+              <ThemedText type="small" themeColor="textSecondary">
+                Tap one to fill in the form, then add where and when. Or write your own below.
+              </ThemedText>
+            </Field>
           )}
 
           <Field label="What are you doing?">
@@ -309,6 +361,11 @@ export function ActivityForm({ existing }: ActivityFormProps) {
               )}
             </View>
           </Pressable>
+          {!existing && !limitMessage && (
+            <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+              You can post one activity a day, so make it a good one.
+            </ThemedText>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </ThemedView>
@@ -398,6 +455,9 @@ const styles = StyleSheet.create({
   },
   error: {
     color: '#e5484d',
+  },
+  center: {
+    textAlign: 'center',
   },
   notice: {
     padding: Spacing.three,

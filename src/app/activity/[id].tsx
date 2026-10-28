@@ -23,6 +23,7 @@ import {
 import { confirmAction } from '@/lib/confirm';
 import { displayName, type ProfileSummary } from '@/lib/profiles';
 import { shareActivity } from '@/lib/share';
+import { showToast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -71,10 +72,15 @@ export default function ActivityScreen() {
   );
 
   // Runs a join/leave/hang-again change, then reloads to show the result.
-  async function update(change: () => PromiseLike<{ error: { message: string } | null }>) {
+  async function update(
+    change: () => PromiseLike<{ error: { message: string } | null }>,
+    // Shown as a pop-up when it works.
+    success?: string
+  ) {
     setBusy(true);
     const { error } = await change();
     if (error) setError(error.message);
+    else if (success) showToast(success);
     await load();
     setBusy(false);
   }
@@ -183,7 +189,10 @@ export default function ActivityScreen() {
             dimmed={left === 0}
             onPress={() => {
               if (left === 0) return;
-              update(() => supabase.from('activity_members').insert({ activity_id: activity.id }));
+              update(
+                () => supabase.from('activity_members').insert({ activity_id: activity.id }),
+                "You're in! 🎉 Say hi in the group chat"
+              );
             }}
           />
         )}
@@ -207,12 +216,14 @@ export default function ActivityScreen() {
             variant="secondary"
             busy={busy}
             onPress={() =>
-              update(() =>
-                supabase
-                  .from('activity_members')
-                  .delete()
-                  .eq('activity_id', activity.id)
-                  .eq('user_id', myId ?? '')
+              update(
+                () =>
+                  supabase
+                    .from('activity_members')
+                    .delete()
+                    .eq('activity_id', activity.id)
+                    .eq('user_id', myId ?? ''),
+                'You left this activity'
               )
             }
           />

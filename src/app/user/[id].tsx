@@ -146,8 +146,18 @@ export default function UserScreen() {
 
         {!isMe && (
           <View style={styles.actions}>
-            {inCrew && (
+            {inCrew ? (
               <PrimaryButton label="💬 Message" onPress={() => router.push(`/dm/${id}`)} />
+            ) : (
+              myId !== id && (
+                <ThemedView type="backgroundElement" style={styles.locked}>
+                  <ThemedText type="smallBold">🔒 Messaging unlocks after you meet</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Join an activity together. Afterwards, if you both tap &quot;Hang again?&quot;,
+                    you can message each other here.
+                  </ThemedText>
+                </ThemedView>
+              )
             )}
             <PrimaryButton
               label="Report"
@@ -187,6 +197,11 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     gap: Spacing.two,
+  },
+  locked: {
+    padding: Spacing.three,
+    borderRadius: Spacing.three,
+    gap: Spacing.one,
   },
   center: {
     textAlign: 'center',

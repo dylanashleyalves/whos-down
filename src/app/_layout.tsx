@@ -2,10 +2,12 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
+import { IntroCards } from '@/components/intro-cards';
 import { MessageAlerts } from '@/components/message-alerts';
 import { PushSetup } from '@/components/push-setup';
 import { AnimatedSplashOverlay } from '@/components/splash-overlay';
 import { SuspendedScreen } from '@/components/suspended-screen';
+import { ToastHost } from '@/components/toast-host';
 import { isSetupComplete } from '@/lib/profiles';
 import { AuthProvider, useAuth } from '@/providers/auth-provider';
 
@@ -77,12 +79,16 @@ function RootNavigator() {
           <Stack.Screen name="demo/activity" options={{ headerShown: true, title: 'Activity' }} />
           <Stack.Screen name="demo/chat" options={{ headerShown: true, title: 'Group chat' }} />
           <Stack.Screen name="demo/profile" />
+          <Stack.Screen name="demo/intro" />
+          <Stack.Screen name="demo/post" options={{ headerShown: true, title: 'Post an activity' }} />
         </Stack.Protected>
       </Stack>
       {signedIn && hasProfile && (
         <>
           <MessageAlerts />
           <PushSetup />
+          <ToastHost />
+          <IntroCards />
         </>
       )}
     </>

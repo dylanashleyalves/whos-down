@@ -20,13 +20,33 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
-type Tab = 'open' | 'all' | 'banned';
+type Tab = 'open' | 'all' | 'banned' | 'feedback';
+
+type Feedback = { id: string; body: string; created_at: string; user_id: string; name: string };
+
+// Feedback from the Profile tab, newest first, with who sent it.
+async function fetchFeedback(): Promise<Feedback[]> {
+  const { data, error } = await supabase
+    .from('feedback')
+    .select('id, body, created_at, user_id')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  const rows = data as Omit<Feedback, 'name'>[];
+  const { data: people } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .in('id', [...new Set(rows.map((r) => r.user_id))]);
+  const names = new Map((people ?? []).map((p) => [p.id as string, p.display_name as string]));
+  return rows.map((r) => ({ ...r, name: names.get(r.user_id) ?? 'Someone' }));
+}
 
 // Moderation screen, only for admins (also enforced by the database functions).
 export default function AdminScreen() {
   const { isAdmin } = useAuth();
   const [reports, setReports] = useState<AdminReport[] | null>(null);
   const [banned, setBanned] = useState<BannedUser[]>([]);
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [tab, setTab] = useState<Tab>('open');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +60,8 @@ export default function AdminScreen() {
       setReports(loadedReports);
       setBanned(loadedBanned);
       setError(null);
+      // Separate, so reports still load if the feedback table isn't set up yet.
+      setFeedback(await fetchFeedback().catch(() => []));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load reports.');
     }
@@ -54,7 +76,10 @@ export default function AdminScreen() {
   if (!isAdmin) return <Redirect href="/" />;
 
   // Runs a moderation action for one report, then reloads the list.
-  async function act(reportId: string, action: () => PromiseLike<{ error: { message: string } | null }>) {
+  async function act(
+    reportId: string,
+    action: () => PromiseLike<{ error: { message: string } | null }>
+  ) {
     setBusyId(reportId);
     const { error } = await action();
     if (error) setError(error.message);
@@ -76,9 +101,14 @@ export default function AdminScreen() {
     );
     if (!ok) return;
     act(report.id, async () => {
-      const result = await supabase.rpc('admin_delete_activity', { target_activity: report.activity_id });
+      const result = await supabase.rpc('admin_delete_activity', {
+        target_activity: report.activity_id,
+      });
       if (result.error) return result;
-      return supabase.rpc('admin_set_report_status', { report_id: report.id, new_status: 'actioned' });
+      return supabase.rpc('admin_set_report_status', {
+        report_id: report.id,
+        new_status: 'actioned',
+      });
     });
   }
 
@@ -98,7 +128,10 @@ export default function AdminScreen() {
         ban_reason: REPORT_REASONS[report.reason],
       });
       if (result.error) return result;
-      return supabase.rpc('admin_set_report_status', { report_id: report.id, new_status: 'actioned' });
+      return supabase.rpc('admin_set_report_status', {
+        report_id: report.id,
+        new_status: 'actioned',
+      });
     });
   }
 
@@ -113,12 +146,21 @@ export default function AdminScreen() {
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.row}>
-          <Chip label={`Open (${openCount})`} selected={tab === 'open'} onPress={() => setTab('open')} />
+          <Chip
+            label={`Open (${openCount})`}
+            selected={tab === 'open'}
+            onPress={() => setTab('open')}
+          />
           <Chip label="All reports" selected={tab === 'all'} onPress={() => setTab('all')} />
           <Chip
             label={`Banned (${banned.length})`}
             selected={tab === 'banned'}
             onPress={() => setTab('banned')}
+          />
+          <Chip
+            label={`Feedback (${feedback.length})`}
+            selected={tab === 'feedback'}
+            onPress={() => setTab('feedback')}
           />
         </View>
 
@@ -130,6 +172,37 @@ export default function AdminScreen() {
 
         {reports === null ? (
           <ActivityIndicator size="large" style={styles.spinner} />
+        ) : tab === 'feedback' ? (
+          feedback.length === 0 ? (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText type="smallBold">No feedback yet</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Testers can send it from the Profile tab.
+              </ThemedText>
+            </ThemedView>
+          ) : (
+            feedback.map((item) => (
+              <ThemedView key={item.id} type="backgroundElement" style={styles.card}>
+                <Pressable onPress={() => router.push(`/user/${item.user_id}`)}>
+                  <ThemedText type="smallBold">
+                    {item.name} · {formatDay(new Date(item.created_at))}{' '}
+                    {formatTime(new Date(item.created_at))}
+                  </ThemedText>
+                </Pressable>
+                <ThemedText type="small">{item.body}</ThemedText>
+                {busyId === item.id ? (
+                  <ActivityIndicator />
+                ) : (
+                  <Action
+                    label="Done, remove"
+                    onPress={() =>
+                      act(item.id, () => supabase.from('feedback').delete().eq('id', item.id))
+                    }
+                  />
+                )}
+              </ThemedView>
+            ))
+          )
         ) : tab === 'banned' ? (
           banned.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
@@ -139,7 +212,9 @@ export default function AdminScreen() {
             banned.map((person) => (
               <ThemedView key={person.user_id} type="backgroundElement" style={styles.bannedRow}>
                 <Avatar profile={person} />
-                <Pressable style={styles.grow} onPress={() => router.push(`/user/${person.user_id}`)}>
+                <Pressable
+                  style={styles.grow}
+                  onPress={() => router.push(`/user/${person.user_id}`)}>
                   <ThemedText type="smallBold">{person.display_name ?? 'Unknown'}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
                     {person.reason ?? 'No reason given'} · {formatDay(new Date(person.banned_at))}
@@ -155,7 +230,9 @@ export default function AdminScreen() {
           )
         ) : shown.length === 0 ? (
           <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="smallBold">{tab === 'all' ? 'No reports yet' : 'No open reports'}</ThemedText>
+            <ThemedText type="smallBold">
+              {tab === 'all' ? 'No reports yet' : 'No open reports'}
+            </ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               You&apos;ll also get an email when a new report comes in.
             </ThemedText>
@@ -189,14 +266,19 @@ function ReportCard({ report, busy, onStatus, onDeleteActivity, onToggleBan }: R
   const created = new Date(report.created_at);
   // The person to act on: whoever was reported, or the host of a reported activity.
   const targetId = report.reported_user_id ?? report.activity_host_id;
-  const targetName = (report.reported_user_id ? report.reported_user_name : report.activity_host_name) ?? 'user';
+  const targetName =
+    (report.reported_user_id ? report.reported_user_name : report.activity_host_name) ?? 'user';
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
       <View style={styles.cardTop}>
         <ThemedText type="smallBold">{REPORT_REASONS[report.reason] ?? report.reason}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          {report.status === 'open' ? '🔴 Open' : report.status === 'actioned' ? '✅ Actioned' : '👀 Reviewed'}
+          {report.status === 'open'
+            ? '🔴 Open'
+            : report.status === 'actioned'
+              ? '✅ Actioned'
+              : '👀 Reviewed'}
         </ThemedText>
       </View>
       <ThemedText type="small" themeColor="textSecondary">
@@ -208,15 +290,16 @@ function ReportCard({ report, busy, onStatus, onDeleteActivity, onToggleBan }: R
       {report.reported_user_id && (
         <Pressable onPress={() => router.push(`/user/${report.reported_user_id}`)}>
           <ThemedText type="small">
-            👤 <ThemedText type="linkPrimary">{report.reported_user_name ?? 'Deleted user'}</ThemedText>
+            👤{' '}
+            <ThemedText type="linkPrimary">
+              {report.reported_user_name ?? 'Deleted user'}
+            </ThemedText>
             {report.target_banned ? ' (banned)' : ''}
           </ThemedText>
         </Pressable>
       )}
       {report.activity_id && (
-        <ThemedText type="small">
-          📌 {report.activity_title ?? 'Deleted activity'}
-        </ThemedText>
+        <ThemedText type="small">📌 {report.activity_title ?? 'Deleted activity'}</ThemedText>
       )}
 
       {busy ? (
@@ -233,7 +316,9 @@ function ReportCard({ report, busy, onStatus, onDeleteActivity, onToggleBan }: R
               onPress={() => onToggleBan(targetId, targetName, report.target_banned)}
             />
           )}
-          {report.status !== 'reviewed' && <Action label="Mark reviewed" onPress={() => onStatus('reviewed')} />}
+          {report.status !== 'reviewed' && (
+            <Action label="Mark reviewed" onPress={() => onStatus('reviewed')} />
+          )}
           {report.status !== 'open' && <Action label="Reopen" onPress={() => onStatus('open')} />}
         </View>
       )}
@@ -241,7 +326,15 @@ function ReportCard({ report, busy, onStatus, onDeleteActivity, onToggleBan }: R
   );
 }
 
-function Action({ label, onPress, danger }: { label: string; onPress: () => void; danger?: boolean }) {
+function Action({
+  label,
+  onPress,
+  danger,
+}: {
+  label: string;
+  onPress: () => void;
+  danger?: boolean;
+}) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView type="backgroundSelected" style={styles.action}>

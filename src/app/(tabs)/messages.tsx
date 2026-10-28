@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { EmptyState } from '@/components/empty-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Brand, BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
@@ -66,14 +67,14 @@ export default function MessagesScreen() {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
             renderItem={({ item }) => <ThreadRow thread={item} />}
             ListEmptyComponent={
-              <ThemedView type="backgroundElement" style={styles.card}>
-                <ThemedText type="smallBold">No messages yet</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  You can message people in your crew. After an activity, tap &quot;Hang
-                  again?&quot; on the people you got on with. When they pick you too, you can chat
-                  here.
-                </ThemedText>
-              </ThemedView>
+              <EmptyState
+                emoji="💬"
+                title="No messages yet"
+                text={
+                  'You can message people in your crew. After a meetup, tap "Hang again?" on the people you got on with. When they pick you too, you can chat here. Until then, use the group chat in each activity.'
+                }
+                action={{ label: 'Find an activity', onPress: () => router.navigate('/') }}
+              />
             }
           />
         )}
@@ -141,11 +142,6 @@ const styles = StyleSheet.create({
   list: {
     gap: Spacing.three,
     paddingBottom: BottomTabInset + Spacing.four,
-  },
-  card: {
-    padding: Spacing.four,
-    borderRadius: Spacing.four,
-    gap: Spacing.one,
   },
   row: {
     flexDirection: 'row',

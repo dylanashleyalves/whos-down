@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityCard } from '@/components/activity-card';
 import { BackdropGlow } from '@/components/art';
 import { Chip } from '@/components/chip';
+import { EmptyState } from '@/components/empty-state';
 import { QuietReminder } from '@/components/quiet-reminder';
 import { WelcomeBanner } from '@/components/welcome-banner';
 import { ThemedText } from '@/components/themed-text';
@@ -220,20 +221,32 @@ export default function FeedScreen() {
               </Animated.View>
             )}
             ListEmptyComponent={
-              <ThemedView type="backgroundElement" style={styles.card}>
-                <ThemedText type="smallBold">
-                  {view === 'mine'
-                    ? 'No plans yet'
-                    : filter
-                      ? `No ${Categories[filter].label.toLowerCase()} activities yet`
-                      : 'No activities yet'}
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {view === 'mine'
-                    ? 'Activities you post or join show up here, so you can find the group chat.'
-                    : 'Be the first. Tap "+ Post" to start a game, a gym session or a hangout.'}
-                </ThemedText>
-              </ThemedView>
+              view === 'mine' ? (
+                <EmptyState
+                  emoji="🗓️"
+                  title="No plans yet"
+                  text="Activities you post or join show up here, with their group chats."
+                  action={{ label: 'Find something to join', onPress: () => setView('discover') }}
+                />
+              ) : filter ? (
+                <EmptyState
+                  emoji={Categories[filter].emoji}
+                  color={Categories[filter].color}
+                  title={`No ${Categories[filter].label.toLowerCase()} activities yet`}
+                  text="Be the first to post one, or look at everything else that's on."
+                  action={{ label: 'Show all activities', onPress: () => setFilter(null) }}
+                />
+              ) : (
+                <EmptyState
+                  emoji="🌱"
+                  title="Nothing on yet"
+                  text="Be the first! Post a game, a gym session or a coffee and people nearby can join you."
+                  action={{
+                    label: '+ Post an activity',
+                    onPress: () => router.push('/new-activity'),
+                  }}
+                />
+              )
             }
           />
         )}
@@ -274,11 +287,6 @@ const styles = StyleSheet.create({
   list: {
     gap: Spacing.three,
     paddingBottom: BottomTabInset + Spacing.four,
-  },
-  card: {
-    padding: Spacing.four,
-    borderRadius: Spacing.four,
-    gap: Spacing.one,
   },
   tabs: {
     flexDirection: 'row',
