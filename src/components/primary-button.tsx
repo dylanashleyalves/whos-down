@@ -2,7 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Brand, Spacing } from '@/constants/theme';
 
 type ButtonProps = {
   label: string;
@@ -45,7 +45,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primary: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
   },
   primaryLabel: {
     color: '#ffffff',

@@ -3,11 +3,13 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
+import { CategoryHero } from '@/components/category-hero';
 import { CheckInCard } from '@/components/check-in-card';
+import { Pill } from '@/components/pill';
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
 import {
   Audiences,
   Categories,
@@ -112,20 +114,34 @@ export default function ActivityScreen() {
   const started = hasStarted(activity);
   const left = spotsLeft(activity);
 
-  const people: { profile: ProfileSummary | null; userId: string; isHost: boolean }[] = [
+  const people: {
+    profile: ProfileSummary | null;
+    userId: string;
+    isHost: boolean;
+  }[] = [
     { profile: activity.host, userId: activity.host_id, isHost: true },
-    ...activity.members.map((m) => ({ profile: m.profile, userId: m.user_id, isHost: false })),
+    ...activity.members.map((m) => ({
+      profile: m.profile,
+      userId: m.user_id,
+      isHost: false,
+    })),
   ];
 
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <ThemedView type="backgroundElement" style={styles.card}>
-          <ThemedText type="small" themeColor="textSecondary">
-            {category.emoji} {category.label}
-            {activity.audience !== 'everyone' &&
-              ` · ${Audiences[activity.audience].emoji} ${Audiences[activity.audience].label}`}
-          </ThemedText>
+        <ThemedView type="backgroundElement" style={[styles.card, { shadowColor: category.color }]}>
+          <View style={styles.hero}>
+            <CategoryHero category={activity.category} />
+          </View>
+          {activity.audience !== 'everyone' && (
+            <View style={styles.pills}>
+              <Pill
+                color={activity.audience === 'girls' ? Brand.pink : Brand.blue}
+                label={`${Audiences[activity.audience].emoji} ${Audiences[activity.audience].label}`}
+              />
+            </View>
+          )}
           <ThemedText type="subtitle" style={styles.title}>
             {activity.title}
           </ThemedText>
@@ -140,7 +156,9 @@ export default function ActivityScreen() {
           )}
           <View style={styles.hostRow}>
             <Avatar profile={activity.host} size={28} />
-            <ThemedText type="small">Hosted by {isHost ? 'you' : displayName(activity.host)}</ThemedText>
+            <ThemedText type="small">
+              Hosted by {isHost ? 'you' : displayName(activity.host)}
+            </ThemedText>
           </View>
         </ThemedView>
 
@@ -171,7 +189,10 @@ export default function ActivityScreen() {
         )}
 
         {isParticipant && (
-          <PrimaryButton label="💬 Open group chat" onPress={() => router.push(`/chat/${activity.id}`)} />
+          <PrimaryButton
+            label="💬 Open group chat"
+            onPress={() => router.push(`/chat/${activity.id}`)}
+          />
         )}
 
         <PrimaryButton
@@ -197,9 +218,7 @@ export default function ActivityScreen() {
           />
         )}
 
-        {started && isParticipant && (
-          <CheckInCard activity={activity} myId={myId} onSaved={load} />
-        )}
+        {started && isParticipant && <CheckInCard activity={activity} myId={myId} onSaved={load} />}
 
         <ThemedText type="smallBold">Who&apos;s going ({people.length})</ThemedText>
         <View style={styles.people}>
@@ -267,11 +286,21 @@ export default function ActivityScreen() {
                 onPress={() => router.push(`/edit-activity/${activity.id}`)}
               />
             )}
-            <PrimaryButton label="Delete activity" variant="secondary" busy={busy} onPress={remove} />
+            <PrimaryButton
+              label="Delete activity"
+              variant="secondary"
+              busy={busy}
+              onPress={remove}
+            />
           </>
         ) : (
           <Pressable
-            onPress={() => router.push({ pathname: '/report', params: { activityId: activity.id } })}
+            onPress={() =>
+              router.push({
+                pathname: '/report',
+                params: { activityId: activity.id },
+              })
+            }
             style={styles.reportLink}>
             <ThemedText type="small" themeColor="textSecondary">
               Report this activity
@@ -303,6 +332,23 @@ const styles = StyleSheet.create({
   card: {
     padding: Spacing.four,
     borderRadius: Spacing.four,
+    gap: Spacing.two,
+    overflow: 'hidden',
+    // A soft glow in the category's colour.
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  // Edge to edge across the top of the card.
+  hero: {
+    marginTop: -Spacing.four,
+    marginHorizontal: -Spacing.four,
+    marginBottom: Spacing.two,
+  },
+  pills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   title: {

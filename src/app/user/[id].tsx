@@ -2,12 +2,14 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
-import { Avatar } from '@/components/avatar';
+import { AvatarRing } from '@/components/avatar-ring';
+import { Pill } from '@/components/pill';
+import { ProfileCover } from '@/components/profile-cover';
 import { PrimaryButton } from '@/components/primary-button';
 import { RankCard } from '@/components/rank-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
 import { Categories } from '@/lib/activities';
 import { confirmAction } from '@/lib/confirm';
 import { formatCountry } from '@/lib/countries';
@@ -35,7 +37,11 @@ export default function UserScreen() {
   const load = useCallback(async () => {
     const [profile, block, theirStats, crew] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
-      supabase.from('blocks').select('blocked_id').eq('blocker_id', myId ?? '').eq('blocked_id', id),
+      supabase
+        .from('blocks')
+        .select('blocked_id')
+        .eq('blocker_id', myId ?? '')
+        .eq('blocked_id', id),
       fetchUserStats(id),
       myId && myId !== id ? canMessage(myId, id) : Promise.resolve(false),
     ]);
@@ -65,7 +71,11 @@ export default function UserScreen() {
 
     setBusy(true);
     const { error } = blocked
-      ? await supabase.from('blocks').delete().eq('blocker_id', myId ?? '').eq('blocked_id', id)
+      ? await supabase
+          .from('blocks')
+          .delete()
+          .eq('blocker_id', myId ?? '')
+          .eq('blocked_id', id)
       : await supabase.from('blocks').insert({ blocked_id: id });
     setBusy(false);
 
@@ -94,7 +104,9 @@ export default function UserScreen() {
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Avatar profile={person} size={96} />
+          <ProfileCover bio={person.bio} interests={person.interests}>
+            <AvatarRing profile={person} size={96} />
+          </ProfileCover>
           <ThemedText type="subtitle">{displayName(person)}</ThemedText>
           <ThemedText themeColor="textSecondary">
             {[person.city && `📍 ${person.city}`, formatCountry(person.country)]
@@ -108,11 +120,12 @@ export default function UserScreen() {
         {person.interests.length > 0 && (
           <View style={styles.interests}>
             {person.interests.map((key) => (
-              <ThemedView key={key} type="backgroundElement" style={styles.interest}>
-                <ThemedText type="small">
-                  {Categories[key]?.emoji} {Categories[key]?.label ?? key}
-                </ThemedText>
-              </ThemedView>
+              <Pill
+                key={key}
+                size="medium"
+                color={Categories[key]?.color ?? Brand.blue}
+                label={`${Categories[key]?.emoji ?? ''} ${Categories[key]?.label ?? key}`}
+              />
             ))}
           </View>
         )}
@@ -183,11 +196,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: Spacing.two,
-  },
-  interest: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.four,
   },
   error: {
     color: '#e5484d',

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
 import type { Message } from '@/lib/chat';
 import type { DirectMessage } from '@/lib/dms';
 import { displayName } from '@/lib/profiles';
@@ -40,22 +40,30 @@ export function MessageAlerts() {
 
     const channel = supabase
       .channel('message-alerts')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
-        const message = payload.new as Message;
-        // Skip your own messages, and chats you're already looking at.
-        if (message.user_id === myId) return;
-        if (pathnameRef.current === `/chat/${message.activity_id}`) return;
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        async (payload) => {
+          const message = payload.new as Message;
+          // Skip your own messages, and chats you're already looking at.
+          if (message.user_id === myId) return;
+          if (pathnameRef.current === `/chat/${message.activity_id}`) return;
 
-        const [sender, activity] = await Promise.all([
-          supabase.from('profiles').select('display_name').eq('id', message.user_id).maybeSingle(),
-          supabase.from('activities').select('title').eq('id', message.activity_id).maybeSingle(),
-        ]);
-        setAlert({
-          href: `/chat/${message.activity_id}`,
-          heading: `${displayName(sender.data)} · ${(activity.data?.title as string | undefined) ?? 'Group chat'}`,
-          body: message.body,
-        });
-      })
+          const [sender, activity] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('id', message.user_id)
+              .maybeSingle(),
+            supabase.from('activities').select('title').eq('id', message.activity_id).maybeSingle(),
+          ]);
+          setAlert({
+            href: `/chat/${message.activity_id}`,
+            heading: `${displayName(sender.data)} · ${(activity.data?.title as string | undefined) ?? 'Group chat'}`,
+            body: message.body,
+          });
+        }
+      )
       .on(
         'postgres_changes',
         {
@@ -126,7 +134,8 @@ const styles = StyleSheet.create({
   banner: {
     width: '100%',
     maxWidth: MaxContentWidth,
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,

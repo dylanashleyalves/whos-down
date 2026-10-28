@@ -9,20 +9,43 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#0F1222',
+    background: '#F4F5FB',
+    backgroundElement: '#FFFFFF',
+    backgroundSelected: '#E4E7F5',
+    textSecondary: '#5B6075',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    // Midnight navy rather than flat black, so cards have something to sit on.
+    text: '#FFFFFF',
+    background: '#0B0E1A',
+    backgroundElement: '#171B2E',
+    backgroundSelected: '#262C48',
+    textSecondary: '#A9AFC6',
   },
 } as const;
+
+// Brand colours: blue into purple.
+export const Brand = {
+  blue: '#3C87F7',
+  purple: '#8B5CF6',
+  pink: '#EC4899',
+  gradient: 'linear-gradient(135deg, #3C87F7 0%, #8B5CF6 100%)',
+  // A warmer variant for highlights like the welcome banner.
+  sunset: 'linear-gradient(135deg, #3C87F7 0%, #8B5CF6 55%, #EC4899 100%)',
+} as const;
+
+// A category's colour flowing into the brand purple, for big artwork like headers.
+export function colorGradient(color: string) {
+  return `linear-gradient(135deg, ${color} 0%, ${Brand.purple} 100%)`;
+}
+
+// Adds transparency to a #RRGGBB colour, e.g. for tinted chip backgrounds.
+export function withAlpha(hex: string, alpha: number) {
+  return `${hex}${Math.round(alpha * 255)
+    .toString(16)
+    .padStart(2, '0')}`;
+}
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 

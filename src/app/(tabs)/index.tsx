@@ -9,14 +9,17 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActivityCard } from '@/components/activity-card';
+import { BackdropGlow } from '@/components/art';
 import { Chip } from '@/components/chip';
 import { QuietReminder } from '@/components/quiet-reminder';
+import { WelcomeBanner } from '@/components/welcome-banner';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
+import { Brand, BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import {
   ACTIVITY_WITH_PEOPLE,
   Categories,
@@ -123,6 +126,7 @@ export default function FeedScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <BackdropGlow />
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
           <ThemedText type="subtitle">Who&apos;s down?</ThemedText>
@@ -138,7 +142,11 @@ export default function FeedScreen() {
         </View>
 
         <View style={styles.tabs}>
-          <Chip label="Discover" selected={view === 'discover'} onPress={() => setView('discover')} />
+          <Chip
+            label="Discover"
+            selected={view === 'discover'}
+            onPress={() => setView('discover')}
+          />
           <Chip label="My plans" selected={view === 'mine'} onPress={() => setView('mine')} />
         </View>
 
@@ -158,6 +166,7 @@ export default function FeedScreen() {
               <Chip
                 key={key}
                 label={`${Categories[key].emoji} ${Categories[key].label}`}
+                color={Categories[key].color}
                 selected={filter === key}
                 onPress={() => setFilter(filter === key ? null : key)}
               />
@@ -190,14 +199,25 @@ export default function FeedScreen() {
             data={shown}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
+            ListHeaderComponent={
+              view === 'discover' ? (
+                <WelcomeBanner
+                  name={profile?.display_name}
+                  place={formatCountry(profile?.country)}
+                />
+              ) : undefined
+            }
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-            renderItem={({ item }) => (
-              <ActivityCard
-                activity={item}
-                myId={myId}
-                unread={unread.get(item.id) ?? 0}
-                hostXp={hostXp.get(item.host_id)}
-              />
+            renderItem={({ item, index }) => (
+              // Cards slide in one after another.
+              <Animated.View entering={FadeInDown.delay(Math.min(index, 6) * 70).springify()}>
+                <ActivityCard
+                  activity={item}
+                  myId={myId}
+                  unread={unread.get(item.id) ?? 0}
+                  hostXp={hostXp.get(item.host_id)}
+                />
+              </Animated.View>
             )}
             ListEmptyComponent={
               <ThemedView type="backgroundElement" style={styles.card}>
@@ -227,6 +247,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   safeArea: {
     flex: 1,
@@ -241,7 +262,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   postButton: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.four,
@@ -263,7 +285,8 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   unreadBanner: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,

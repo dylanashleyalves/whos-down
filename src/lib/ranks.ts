@@ -3,11 +3,26 @@ import { supabase } from '@/lib/supabase';
 // Ranks use XP from the last 90 days (worked out in the database), so they drop
 // if someone stops going out. See supabase/migrations/0008_ranks.sql for the XP rules.
 export const RANKS = [
-  { name: 'Rookie', emoji: '🌱', minXp: 0 },
-  { name: 'Regular', emoji: '🥉', minXp: 50 },
-  { name: 'Squad', emoji: '🥈', minXp: 150 },
-  { name: 'Crew Captain', emoji: '🥇', minXp: 300 },
-  { name: 'Legend', emoji: '🏆', minXp: 600 },
+  { name: 'Rookie', emoji: '🌱', minXp: 0, gradient: 'linear-gradient(135deg, #22C55E, #0EA5E9)' },
+  {
+    name: 'Regular',
+    emoji: '🥉',
+    minXp: 50,
+    gradient: 'linear-gradient(135deg, #C2773E, #F59E0B)',
+  },
+  { name: 'Squad', emoji: '🥈', minXp: 150, gradient: 'linear-gradient(135deg, #64748B, #CBD5E1)' },
+  {
+    name: 'Crew Captain',
+    emoji: '🥇',
+    minXp: 300,
+    gradient: 'linear-gradient(135deg, #EAB308, #F97316)',
+  },
+  {
+    name: 'Legend',
+    emoji: '🏆',
+    minXp: 600,
+    gradient: 'linear-gradient(135deg, #8B5CF6, #EC4899)',
+  },
 ] as const;
 
 export type Rank = (typeof RANKS)[number];

@@ -3,11 +3,13 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActivityCard } from '@/components/activity-card';
+import { BackdropGlow } from '@/components/art';
 import { Chip } from '@/components/chip';
 import { DemoTabBar } from '@/components/demo-tab-bar';
 import { ThemedText } from '@/components/themed-text';
+import { WelcomeBanner } from '@/components/welcome-banner';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
 import { Categories, type Category } from '@/lib/activities';
 import { DEMO_ACTIVITIES, DEMO_ME } from '@/lib/demo-data';
 
@@ -15,6 +17,7 @@ import { DEMO_ACTIVITIES, DEMO_ME } from '@/lib/demo-data';
 export default function DemoFeedScreen() {
   return (
     <ThemedView style={styles.container}>
+      <BackdropGlow />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.header}>
@@ -35,17 +38,23 @@ export default function DemoFeedScreen() {
             Upcoming activities with spots left in Singapore
           </ThemedText>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.row}>
             <Chip label="All" selected onPress={() => {}} />
             {(Object.keys(Categories) as Category[]).map((key) => (
               <Chip
                 key={key}
                 label={`${Categories[key].emoji} ${Categories[key].label}`}
+                color={Categories[key].color}
                 selected={false}
                 onPress={() => {}}
               />
             ))}
           </ScrollView>
+
+          <WelcomeBanner name={DEMO_ME.display_name} place="Singapore" />
 
           <View style={styles.banner}>
             <ThemedText type="smallBold" style={styles.white}>
@@ -53,6 +62,7 @@ export default function DemoFeedScreen() {
             </ThemedText>
           </View>
 
+          {/* No slide-in animation here, so screenshots never catch cards mid-way. */}
           {DEMO_ACTIVITIES.map((activity) => (
             <ActivityCard
               key={activity.id}
@@ -73,6 +83,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   safeArea: {
     flex: 1,
@@ -88,7 +99,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   postButton: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.four,
@@ -101,7 +113,8 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   banner: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,

@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDay, formatTime } from '@/lib/activities';
 import { canMessage, fetchConversation, markDmsRead, type DirectMessage } from '@/lib/dms';
@@ -62,13 +62,17 @@ export default function DirectMessageScreen() {
     // so just keep the ones from this conversation.
     const channel = supabase
       .channel(`dm:${myId}:${otherId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, (payload) => {
-        const message = payload.new as DirectMessage;
-        const inThisChat =
-          (message.sender_id === otherId && message.recipient_id === myId) ||
-          (message.sender_id === myId && message.recipient_id === otherId);
-        if (inThisChat) setMessages((current) => addMessage(current, message));
-      })
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'direct_messages' },
+        (payload) => {
+          const message = payload.new as DirectMessage;
+          const inThisChat =
+            (message.sender_id === otherId && message.recipient_id === myId) ||
+            (message.sender_id === myId && message.recipient_id === otherId);
+          if (inThisChat) setMessages((current) => addMessage(current, message));
+        }
+      )
       .subscribe();
 
     return () => {
@@ -123,10 +127,17 @@ export default function DirectMessageScreen() {
                 <View style={[styles.messageRow, mine && styles.mineRow]}>
                   <ThemedView
                     type={mine ? 'backgroundSelected' : 'backgroundElement'}
-                    style={styles.bubble}>
-                    <ThemedText type="small">{item.body}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
-                      {formatDay(sent) === 'Today' ? formatTime(sent) : `${formatDay(sent)} · ${formatTime(sent)}`}
+                    style={[styles.bubble, mine && styles.mineBubble]}>
+                    <ThemedText type="small" style={mine && styles.mineText}>
+                      {item.body}
+                    </ThemedText>
+                    <ThemedText
+                      type="small"
+                      themeColor="textSecondary"
+                      style={[styles.time, mine && styles.mineTime]}>
+                      {formatDay(sent) === 'Today'
+                        ? formatTime(sent)
+                        : `${formatDay(sent)} · ${formatTime(sent)}`}
                       {mine && item.read_at ? ' · Seen' : ''}
                     </ThemedText>
                   </ThemedView>
@@ -153,7 +164,13 @@ export default function DirectMessageScreen() {
           {allowed ? (
             <View style={styles.composer}>
               <TextInput
-                style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+                style={[
+                  styles.input,
+                  {
+                    color: theme.text,
+                    backgroundColor: theme.backgroundElement,
+                  },
+                ]}
                 placeholder="Message"
                 placeholderTextColor={theme.textSecondary}
                 maxLength={1000}
@@ -164,7 +181,10 @@ export default function DirectMessageScreen() {
               <Pressable
                 onPress={send}
                 disabled={!draft.trim()}
-                style={({ pressed }) => [pressed && styles.pressed, !draft.trim() && styles.dimmed]}>
+                style={({ pressed }) => [
+                  pressed && styles.pressed,
+                  !draft.trim() && styles.dimmed,
+                ]}>
                 <View style={styles.sendButton}>
                   <ThemedText type="smallBold" style={styles.sendLabel}>
                     Send
@@ -212,6 +232,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
   },
+  mineBubble: {
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
+  },
+  mineText: {
+    color: '#ffffff',
+  },
+  mineTime: {
+    color: 'rgba(255, 255, 255, 0.75)',
+  },
   time: {
     fontSize: 11,
     lineHeight: 14,
@@ -247,7 +277,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   sendButton: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
     paddingVertical: Spacing.two + Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.four,

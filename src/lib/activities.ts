@@ -2,12 +2,12 @@ import { PROFILE_SUMMARY, type ProfileSummary } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 
 export const Categories = {
-  sports: { label: 'Sports', emoji: '🏀' },
-  gym: { label: 'Gym', emoji: '🏋️' },
-  gaming: { label: 'Gaming', emoji: '🎮' },
-  food: { label: 'Food', emoji: '🍜' },
-  outdoors: { label: 'Outdoors', emoji: '🥾' },
-  hangout: { label: 'Hangout', emoji: '🍻' },
+  sports: { label: 'Sports', emoji: '🏀', color: '#F97316' },
+  gym: { label: 'Gym', emoji: '🏋️', color: '#EF4444' },
+  gaming: { label: 'Gaming', emoji: '🎮', color: '#8B5CF6' },
+  food: { label: 'Food', emoji: '🍜', color: '#F59E0B' },
+  outdoors: { label: 'Outdoors', emoji: '🥾', color: '#22C55E' },
+  hangout: { label: 'Hangout', emoji: '🍻', color: '#EC4899' },
 } as const;
 
 export type Category = keyof typeof Categories;

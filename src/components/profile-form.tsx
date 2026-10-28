@@ -21,14 +21,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Categories, type Category } from '@/lib/activities';
 import { deviceCountry } from '@/lib/countries';
-import {
-  ageOn,
-  GENDERS,
-  MIN_AGE,
-  parseBirthdate,
-  uploadAvatar,
-  type Gender,
-} from '@/lib/profiles';
+import { ageOn, GENDERS, MIN_AGE, parseBirthdate, uploadAvatar, type Gender } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -61,7 +54,10 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
   const [error, setError] = useState<string | null>(null);
 
   const userId = session?.user.id;
-  const preview = { display_name: displayName, avatar_url: photo?.uri ?? profile?.avatar_url ?? null };
+  const preview = {
+    display_name: displayName,
+    avatar_url: photo?.uri ?? profile?.avatar_url ?? null,
+  };
 
   async function pickPhoto() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -154,7 +150,10 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
     }
   }
 
-  const inputStyle = [styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }];
+  const inputStyle = [
+    styles.input,
+    { color: theme.text, backgroundColor: theme.backgroundElement },
+  ];
 
   return (
     <ThemedView style={styles.container}>
@@ -166,7 +165,9 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
 
           <Pressable onPress={pickPhoto} style={styles.photo}>
             <Avatar profile={preview} size={96} />
-            <ThemedText type="linkPrimary">{preview.avatar_url ? 'Change photo' : 'Add a photo'}</ThemedText>
+            <ThemedText type="linkPrimary">
+              {preview.avatar_url ? 'Change photo' : 'Add a photo'}
+            </ThemedText>
           </Pressable>
 
           <Field label="First name">
@@ -208,6 +209,7 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
                 <Chip
                   key={key}
                   label={`${Categories[key].emoji} ${Categories[key].label}`}
+                  color={Categories[key].color}
                   selected={interests.includes(key)}
                   onPress={() => toggleInterest(key)}
                 />
@@ -290,7 +292,9 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
                   label="I agree to the community guidelines"
                 />
                 <Pressable onPress={() => setShowGuidelines(!showGuidelines)}>
-                  <ThemedText type="linkPrimary">{showGuidelines ? 'Hide' : 'Read them'}</ThemedText>
+                  <ThemedText type="linkPrimary">
+                    {showGuidelines ? 'Hide' : 'Read them'}
+                  </ThemedText>
                 </Pressable>
               </View>
 
@@ -328,7 +332,15 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
   );
 }
 
-function Checkbox({ checked, onToggle, label }: { checked: boolean; onToggle: () => void; label: string }) {
+function Checkbox({
+  checked,
+  onToggle,
+  label,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
   return (
     <Pressable onPress={onToggle} style={styles.agreeTap}>
       <ThemedView

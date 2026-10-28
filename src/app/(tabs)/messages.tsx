@@ -1,12 +1,19 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
+import { Brand, BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { formatDay, formatTime } from '@/lib/activities';
 import { fetchDmThreads, type DmThread } from '@/lib/dms';
 import { displayName } from '@/lib/profiles';
@@ -62,8 +69,9 @@ export default function MessagesScreen() {
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="smallBold">No messages yet</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  You can message people in your crew. After an activity, tap &quot;Hang again?&quot; on
-                  the people you got on with. When they pick you too, you can chat here.
+                  You can message people in your crew. After an activity, tap &quot;Hang
+                  again?&quot; on the people you got on with. When they pick you too, you can chat
+                  here.
                 </ThemedText>
               </ThemedView>
             }
@@ -161,7 +169,8 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     paddingHorizontal: Spacing.one,
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
     alignItems: 'center',
     justifyContent: 'center',
   },

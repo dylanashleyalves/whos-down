@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchActivity, formatTime, type ActivityWithPeople } from '@/lib/activities';
 import { markChatRead, type Message } from '@/lib/chat';
@@ -60,7 +60,12 @@ export default function ChatScreen() {
       .channel(`chat:${id}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `activity_id=eq.${id}` },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `activity_id=eq.${id}`,
+        },
         (payload) => setMessages((current) => addMessage(current, payload.new as Message))
       )
       .subscribe();
@@ -137,10 +142,15 @@ export default function ChatScreen() {
                   )}
                   <ThemedView
                     type={mine ? 'backgroundSelected' : 'backgroundElement'}
-                    style={styles.bubble}>
+                    style={[styles.bubble, mine && styles.mineBubble]}>
                     {!mine && <ThemedText type="smallBold">{displayName(sender)}</ThemedText>}
-                    <ThemedText type="small">{item.body}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
+                    <ThemedText type="small" style={mine && styles.mineText}>
+                      {item.body}
+                    </ThemedText>
+                    <ThemedText
+                      type="small"
+                      themeColor="textSecondary"
+                      style={[styles.time, mine && styles.mineTime]}>
                       {formatTime(new Date(item.created_at))}
                     </ThemedText>
                   </ThemedView>
@@ -162,7 +172,10 @@ export default function ChatScreen() {
 
           <View style={styles.composer}>
             <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+              style={[
+                styles.input,
+                { color: theme.text, backgroundColor: theme.backgroundElement },
+              ]}
               placeholder="Message"
               placeholderTextColor={theme.textSecondary}
               maxLength={1000}
@@ -223,6 +236,16 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     flexShrink: 1,
   },
+  mineBubble: {
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
+  },
+  mineText: {
+    color: '#ffffff',
+  },
+  mineTime: {
+    color: 'rgba(255, 255, 255, 0.75)',
+  },
   time: {
     fontSize: 11,
     lineHeight: 14,
@@ -249,7 +272,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   sendButton: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
     paddingVertical: Spacing.two + Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.four,

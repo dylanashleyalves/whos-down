@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { nextRank, rankFor, type UserStats } from '@/lib/ranks';
 
@@ -12,19 +12,20 @@ export function RankCard({ stats }: { stats: UserStats }) {
 
   const rank = rankFor(stats.xp_recent);
   const next = nextRank(stats.xp_recent);
-  const progress = next
-    ? (stats.xp_recent - rank.minXp) / (next.minXp - rank.minXp)
-    : 1;
+  const progress = next ? (stats.xp_recent - rank.minXp) / (next.minXp - rank.minXp) : 1;
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
-      <View style={styles.top}>
+      {/* The rank's own colours: green for Rookie, then bronze, silver, gold and Legend. */}
+      <View style={[styles.top, { backgroundImage: rank.gradient }]}>
         <ThemedText type="subtitle" style={styles.emoji}>
           {rank.emoji}
         </ThemedText>
         <View style={styles.grow}>
-          <ThemedText type="smallBold">{rank.name}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="smallBold" style={styles.rankName}>
+            {rank.name}
+          </ThemedText>
+          <ThemedText type="small" style={styles.rankXp}>
             {next
               ? `${stats.xp_recent} XP · ${next.minXp - stats.xp_recent} to ${next.emoji} ${next.name}`
               : `${stats.xp_recent} XP · top rank`}
@@ -33,7 +34,15 @@ export function RankCard({ stats }: { stats: UserStats }) {
       </View>
 
       <View style={[styles.bar, { backgroundColor: theme.backgroundSelected }]}>
-        <View style={[styles.fill, { width: `${Math.round(progress * 100)}%` }]} />
+        <View
+          style={[
+            styles.fill,
+            {
+              width: `${Math.round(progress * 100)}%`,
+              backgroundImage: rank.gradient,
+            },
+          ]}
+        />
       </View>
 
       <View style={styles.stats}>
@@ -43,8 +52,8 @@ export function RankCard({ stats }: { stats: UserStats }) {
       </View>
 
       <ThemedText type="small" themeColor="textSecondary">
-        Earn XP by showing up to meetups, meeting new people and seeing your crew again. Ranks use the
-        last 90 days, so keep going out to hold yours.
+        Earn XP by showing up to meetups, meeting new people and seeing your crew again. Ranks use
+        the last 90 days, so keep going out to hold yours.
       </ThemedText>
     </ThemedView>
   );
@@ -73,6 +82,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
+    padding: Spacing.three,
+    borderRadius: Spacing.three,
+    backgroundColor: Brand.blue,
+  },
+  rankName: {
+    color: '#ffffff',
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  rankXp: {
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   emoji: {
     fontSize: 36,
@@ -88,7 +108,8 @@ const styles = StyleSheet.create({
   },
   fill: {
     height: '100%',
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
     borderRadius: 4,
   },
   stats: {

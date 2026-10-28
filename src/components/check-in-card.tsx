@@ -5,7 +5,7 @@ import { Avatar } from '@/components/avatar';
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Brand, Spacing } from '@/constants/theme';
 import { isCheckInOpen, type ActivityWithPeople } from '@/lib/activities';
 import { displayName } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
@@ -91,9 +91,7 @@ export function CheckInCard({ activity, myId, onSaved }: CheckInCardProps) {
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold">
-        {checkedIn ? '✓ Checked in' : '📋 Who showed up?'}
-      </ThemedText>
+      <ThemedText type="smallBold">{checkedIn ? '✓ Checked in' : '📋 Who showed up?'}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
         {checkedIn
           ? `${present.size} of ${activity.members.length} came.${windowOpen ? ' You can still change it this week.' : ''}`
@@ -164,7 +162,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkOn: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
   },
   white: {
     color: '#ffffff',

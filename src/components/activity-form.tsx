@@ -14,7 +14,7 @@ import {
 import { Chip } from '@/components/chip';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   Audiences,
@@ -118,7 +118,7 @@ export function ActivityForm({ existing }: ActivityFormProps) {
     }
 
     const missing = [
-      title.trim().length < 3 && 'what you\'re doing (3+ characters)',
+      title.trim().length < 3 && "what you're doing (3+ characters)",
       location.trim().length < 2 && 'where',
       !startsAt && 'a time',
     ].filter(Boolean);
@@ -151,7 +151,10 @@ export function ActivityForm({ existing }: ActivityFormProps) {
     }
   }
 
-  const inputStyle = [styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }];
+  const inputStyle = [
+    styles.input,
+    { color: theme.text, backgroundColor: theme.backgroundElement },
+  ];
 
   return (
     <ThemedView style={styles.container}>
@@ -182,6 +185,7 @@ export function ActivityForm({ existing }: ActivityFormProps) {
                 <Chip
                   key={key}
                   label={`${Categories[key].emoji} ${Categories[key].label}`}
+                  color={Categories[key].color}
                   selected={category === key}
                   onPress={() => setCategory(key)}
                 />
@@ -219,7 +223,10 @@ export function ActivityForm({ existing }: ActivityFormProps) {
           </Field>
 
           <Field label="When?">
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.row}>
               {days.map((day, i) => (
                 <Chip
                   key={day.toISOString()}
@@ -237,7 +244,10 @@ export function ActivityForm({ existing }: ActivityFormProps) {
                 No times left today. Pick another day.
               </ThemedText>
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.row}>
                 {slots.map((slot) => (
                   <Chip
                     key={slot.toISOString()}
@@ -252,7 +262,11 @@ export function ActivityForm({ existing }: ActivityFormProps) {
 
           <Field label="How many more people?">
             <View style={styles.stepper}>
-              <StepButton label="−" disabled={spots <= minSpots} onPress={() => setSpots(spots - 1)} />
+              <StepButton
+                label="−"
+                disabled={spots <= minSpots}
+                onPress={() => setSpots(spots - 1)}
+              />
               <ThemedText type="subtitle" style={styles.spots}>
                 {spots}
               </ThemedText>
@@ -281,7 +295,10 @@ export function ActivityForm({ existing }: ActivityFormProps) {
           <Pressable
             disabled={busy}
             onPress={post}
-            style={({ pressed }) => [pressed && styles.pressed, (!canPost || busy) && styles.disabled]}>
+            style={({ pressed }) => [
+              pressed && styles.pressed,
+              (!canPost || busy) && styles.disabled,
+            ]}>
             <View style={styles.postButton}>
               {busy ? (
                 <ActivityIndicator color="#ffffff" />
@@ -307,7 +324,15 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function StepButton({ label, disabled, onPress }: { label: string; disabled: boolean; onPress: () => void }) {
+function StepButton({
+  label,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  disabled: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       disabled={disabled}
@@ -379,7 +404,8 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
   },
   postButton: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Brand.blue,
+    backgroundImage: Brand.gradient,
     paddingVertical: Spacing.three,
     borderRadius: Spacing.three,
     alignItems: 'center',

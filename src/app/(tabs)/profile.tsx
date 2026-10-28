@@ -4,11 +4,14 @@ import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { AvatarRing } from '@/components/avatar-ring';
+import { Pill } from '@/components/pill';
+import { ProfileCover } from '@/components/profile-cover';
 import { PrimaryButton } from '@/components/primary-button';
 import { RankCard } from '@/components/rank-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
+import { BottomTabInset, Brand, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { Categories } from '@/lib/activities';
 import { formatCountry } from '@/lib/countries';
 import {
@@ -65,7 +68,9 @@ export default function ProfileScreen() {
     setStats(myStats);
     setFriendships(crewFriendships);
     setCrew((connections.data as Profile[]) ?? []);
-    const rows = (blocks.data ?? []) as unknown as { blocked: ProfileSummary | null }[];
+    const rows = (blocks.data ?? []) as unknown as {
+      blocked: ProfileSummary | null;
+    }[];
     setBlocked(rows.flatMap((row) => (row.blocked ? [row.blocked] : [])));
   }, [session?.user.id]);
 
@@ -76,7 +81,11 @@ export default function ProfileScreen() {
   );
 
   async function unblock(id: string) {
-    await supabase.from('blocks').delete().eq('blocker_id', session?.user.id ?? '').eq('blocked_id', id);
+    await supabase
+      .from('blocks')
+      .delete()
+      .eq('blocker_id', session?.user.id ?? '')
+      .eq('blocked_id', id);
     load();
   }
 
@@ -85,7 +94,9 @@ export default function ProfileScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.header}>
-            <Avatar profile={profile} size={88} />
+            <ProfileCover bio={profile?.bio} interests={profile?.interests}>
+              <AvatarRing profile={profile} size={88} />
+            </ProfileCover>
             <ThemedText type="subtitle">{displayName(profile)}</ThemedText>
             <ThemedText themeColor="textSecondary">
               {[profile?.city && `📍 ${profile.city}`, formatCountry(profile?.country)]
@@ -99,11 +110,12 @@ export default function ProfileScreen() {
           {profile && profile.interests.length > 0 && (
             <View style={styles.interests}>
               {profile.interests.map((key) => (
-                <ThemedView key={key} type="backgroundElement" style={styles.interest}>
-                  <ThemedText type="small">
-                    {Categories[key]?.emoji} {Categories[key]?.label ?? key}
-                  </ThemedText>
-                </ThemedView>
+                <Pill
+                  key={key}
+                  size="medium"
+                  color={Categories[key]?.color ?? Brand.blue}
+                  label={`${Categories[key]?.emoji ?? ''} ${Categories[key]?.label ?? key}`}
+                />
               ))}
             </View>
           )}
@@ -123,16 +135,14 @@ export default function ProfileScreen() {
             onPress={() => router.push('/edit-profile')}
           />
 
-          {isAdmin && (
-            <PrimaryButton label="🛡️ Moderation" onPress={() => router.push('/admin')} />
-          )}
+          {isAdmin && <PrimaryButton label="🛡️ Moderation" onPress={() => router.push('/admin')} />}
 
           <ThemedText type="smallBold">Your crew ({crew.length})</ThemedText>
           {crew.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                After an activity, tap &quot;Hang again?&quot; on the people you&apos;d meet up with again.
-                When they pick you too, they show up here.
+                After an activity, tap &quot;Hang again?&quot; on the people you&apos;d meet up with
+                again. When they pick you too, they show up here.
               </ThemedText>
             </ThemedView>
           ) : (
@@ -244,11 +254,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: Spacing.two,
-  },
-  interest: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.four,
   },
   card: {
     padding: Spacing.four,

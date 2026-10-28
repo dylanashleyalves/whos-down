@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
+import { CategoryHero } from '@/components/category-hero';
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -24,10 +25,10 @@ export default function DemoActivityScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <ThemedView type="backgroundElement" style={styles.card}>
-          <ThemedText type="small" themeColor="textSecondary">
-            {category.emoji} {category.label}
-          </ThemedText>
+        <ThemedView type="backgroundElement" style={[styles.card, { shadowColor: category.color }]}>
+          <View style={styles.hero}>
+            <CategoryHero category={activity.category} />
+          </View>
           <ThemedText type="subtitle" style={styles.title}>
             {activity.title}
           </ThemedText>
@@ -36,7 +37,8 @@ export default function DemoActivityScreen() {
           </ThemedText>
           <ThemedText>📍 {activity.location}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            Meet at the visitor centre. Bring water and comfy shoes, we&apos;ll grab breakfast after.
+            Meet at the visitor centre. Bring water and comfy shoes, we&apos;ll grab breakfast
+            after.
           </ThemedText>
           <View style={styles.hostRow}>
             <Avatar profile={activity.host} size={28} />
@@ -87,6 +89,18 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     borderRadius: Spacing.four,
     gap: Spacing.two,
+    overflow: 'hidden',
+    // A soft glow in the category's colour.
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  // Edge to edge across the top of the card.
+  hero: {
+    marginTop: -Spacing.four,
+    marginHorizontal: -Spacing.four,
+    marginBottom: Spacing.two,
   },
   title: {
     fontSize: 26,
