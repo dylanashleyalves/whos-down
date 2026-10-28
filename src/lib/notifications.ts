@@ -1,20 +1,9 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
+import type * as NotificationsModule from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
-
-// The app already shows its own banner for new messages while it's open, so don't
-// also show the system one then.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: false,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
 
 // Push needs a real build on a real phone: Expo Go on Android and emulators can't get tokens.
 export function canUsePush() {
@@ -25,18 +14,40 @@ export function canUsePush() {
   );
 }
 
+let loaded: Promise<typeof NotificationsModule> | null = null;
+
+// expo-notifications is only loaded in real builds: just importing it crashes Expo Go
+// on Android, which doesn't include its native modules.
+function notifications() {
+  if (!canUsePush()) return null;
+  loaded ??= import('expo-notifications').then((module) => {
+    // The app already shows its own banner for new messages while it's open, so don't
+    // also show the system one then.
+    module.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: false,
+        shouldShowList: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
+    return module;
+  });
+  return loaded;
+}
+
 let currentToken: string | null = null;
 
 // Asks permission if needed, then saves this phone's push token for the signed-in user.
 // Returns false if push isn't available or the person said no.
 export async function registerForPush() {
-  if (!canUsePush()) return false;
+  const Notifications = await notifications();
+  if (!Notifications) return false;
 
   if (Platform.OS === 'android') {
     // Android 13+ only shows the permission prompt once a channel exists.
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Messages and reminders',
-      // eslint-disable-next-line import/namespace -- re-exported with `export *`, which the lint rule can't follow
       importance: Notifications.AndroidImportance.HIGH,
       lightColor: '#3C87F7',
     });
@@ -66,4 +77,31 @@ export async function unregisterForPush() {
   if (!currentToken) return;
   await supabase.rpc('unregister_push_token', { device_token: currentToken });
   currentToken = null;
+}
+
+// Calls onOpen with the screen to show when a notification is tapped, including the one
+// that opened the app. Returns a function that stops listening.
+export function onNotificationTap(onOpen: (href: string) => void) {
+  let stopped = false;
+  let subscription: { remove: () => void } | null = null;
+
+  notifications()?.then(async (Notifications) => {
+    const open = (response: NotificationsModule.NotificationResponse | null) => {
+      if (!response || response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
+      const href = response.notification.request.content.data?.href;
+      if (typeof href === 'string' && href.startsWith('/')) onOpen(href);
+    };
+
+    const last = await Notifications.getLastNotificationResponseAsync();
+    if (stopped) return;
+    open(last);
+    // Don't open the same notification again next time the app starts.
+    await Notifications.clearLastNotificationResponseAsync();
+    subscription = Notifications.addNotificationResponseReceivedListener(open);
+  });
+
+  return () => {
+    stopped = true;
+    subscription?.remove();
+  };
 }
