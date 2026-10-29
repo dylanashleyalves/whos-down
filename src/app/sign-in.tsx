@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -87,7 +88,12 @@ export default function SignInScreen() {
               <ActivityIndicator color="#1F1F1F" />
             ) : (
               <>
-                <ThemedText style={styles.googleG}>G</ThemedText>
+                <Image
+                  source={require('@/assets/images/google-g.svg')}
+                  style={styles.googleG}
+                  contentFit="contain"
+                  accessibilityIgnoresInvertColors
+                />
                 <ThemedText type="smallBold" style={styles.googleLabel}>
                   Continue with Google
                 </ThemedText>
@@ -205,10 +211,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   googleG: {
-    color: '#4285F4',
-    fontSize: 20,
-    lineHeight: 24,
-    fontWeight: 800,
+    width: 20,
+    height: 20,
   },
   googleLabel: {
     color: '#1F1F1F',
