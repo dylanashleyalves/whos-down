@@ -334,7 +334,7 @@ export default function ActivityScreen() {
             Tap &quot;Hang again?&quot; for anyone you&apos;d meet up with again. They only find out
             if they pick you too, and then you&apos;re in each other&apos;s crew.
             {kudosOpen &&
-              ' Tap 👏 to say what was great about someone. It shows on their profile, but not who said it.'}
+              ' Tap 👏 to say what was great about someone. They get a notification from you, and their profile adds it to their count.'}
           </ThemedText>
         )}
 

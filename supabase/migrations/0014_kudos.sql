@@ -1,5 +1,5 @@
 -- Kudos: after a meetup, give people positive tags like "Friendly" or "On time".
--- Profiles show how many times each tag was given, never who gave it. There are no
+-- Profiles show how many times each tag was given, not who gave it. There are no
 -- negative tags: bad behaviour goes through Report.
 -- Run this once in Supabase: Dashboard -> SQL Editor -> New query -> paste -> Run.
 

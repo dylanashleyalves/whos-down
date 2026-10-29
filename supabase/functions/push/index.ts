@@ -31,33 +31,6 @@ const PREVIEW_LENGTH = 120;
 // Errors Expo reported for this request's notifications, so they show up in the reply
 // (net._http_response in the SQL Editor). Reset for each request.
 let deliveryErrors: string[] = [];
-let ticketIds: string[] = [];
-
-// Expo hands each notification to Google (Android) or Apple a moment after accepting it.
-// Asks how that went, so failures there (e.g. bad Firebase credentials) show up too.
-async function checkReceipts() {
-  if (ticketIds.length === 0) return;
-  await new Promise((resolve) => setTimeout(resolve, 2500));
-  const response = await fetch('https://exp.host/--/api/v2/push/getReceipts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ ids: ticketIds }),
-  });
-  const result = await response.json();
-  const receipts = Object.values(result.data ?? {}) as {
-    status: string;
-    message?: string;
-    details?: { error?: string };
-  }[];
-  for (const receipt of receipts) {
-    if (receipt.status === 'error') {
-      deliveryErrors.push(`${receipt.details?.error ?? ''} ${receipt.message ?? ''}`.trim());
-    }
-  }
-  if (receipts.length < ticketIds.length) {
-    deliveryErrors.push(`${ticketIds.length - receipts.length} not delivered yet`);
-  }
-}
 
 // At most this many "new activity" alerts per person a day.
 const ACTIVITY_ALERTS_PER_DAY = 3;
@@ -166,7 +139,6 @@ async function send(pushes: Push[]) {
       message?: string;
     }[]) {
       if (ticket.status === 'error') deliveryErrors.push(ticket.message ?? 'unknown error');
-      else if (ticket.id) ticketIds.push(ticket.id);
     }
     // Forget phones that uninstalled the app or turned notifications off at the system level.
     const dead = ((result.data ?? []) as { status: string; details?: { error?: string } }[])
@@ -294,7 +266,8 @@ async function onActivity(record: {
   );
 }
 
-// Kudos never say who gave them. One push per person per activity, however many tags.
+// Kudos say who gave them (profiles only show counts). One push per person per activity,
+// however many tags.
 const KUDOS_LABEL: Record<string, string> = {
   friendly: '😊 Friendly',
   on_time: '⏰ On time',
@@ -312,18 +285,18 @@ async function onKudos(record: {
 }) {
   const ref = `${record.activity_id}:${record.from_user}`;
   if ((await firstTime([record.to_user], 'kudos', ref)).length === 0) return 0;
-  const { data: activity } = await supabase
-    .from('activities')
-    .select('title')
-    .eq('id', record.activity_id)
-    .maybeSingle();
+  const [{ data: activity }, giver] = await Promise.all([
+    supabase.from('activities').select('title').eq('id', record.activity_id).maybeSingle(),
+    nameOf(record.from_user),
+  ]);
   return send([
     {
       userId: record.to_user,
       kind: 'kudos',
-      title: '👏 You got kudos!',
-      body: `Someone from ${activity?.title ?? 'your meetup'} thinks you're ${KUDOS_LABEL[record.tag] ?? 'great'}. Down to hang again?`,
-      href: '/profile',
+      title: `👏 Kudos from ${giver}`,
+      body: `${giver} thinks you're ${KUDOS_LABEL[record.tag] ?? 'great'} after ${activity?.title ?? 'your meetup'}. Down to hang again?`,
+      // The activity, where they can tap "Hang again?" and give kudos back.
+      href: `/activity/${record.activity_id}`,
     },
   ]);
 }
@@ -408,7 +381,6 @@ Deno.serve(async (request) => {
   try {
     const { type, record } = await request.json();
     deliveryErrors = [];
-    ticketIds = [];
     const sent =
       type === 'message'
         ? await onGroupMessage(record)
@@ -423,7 +395,6 @@ Deno.serve(async (request) => {
                 : type === 'reminders'
                   ? await reminders()
                   : 0;
-    await checkReceipts();
     const problems = deliveryErrors.length > 0 ? ` (errors: ${deliveryErrors.join('; ')})` : '';
     return new Response(`Sent ${sent}${problems}`, { status: 200 });
   } catch (error) {
