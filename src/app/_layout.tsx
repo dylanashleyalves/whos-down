@@ -73,6 +73,8 @@ function RootNavigator() {
         <Stack.Protected guard={!signedIn} redirectTo={home}>
           <Stack.Screen name="sign-in" />
         </Stack.Protected>
+        {/* Google sign-in comes back here, signed in or not. */}
+        <Stack.Screen name="auth-callback" />
         <Stack.Screen
           name="guidelines"
           options={{ headerShown: true, title: 'Community guidelines' }}

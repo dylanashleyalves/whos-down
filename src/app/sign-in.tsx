@@ -14,6 +14,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { signInWithGoogle } from '@/lib/google-auth';
 import { supabase } from '@/lib/supabase';
 
 type Mode = 'sign-in' | 'sign-up';
@@ -26,6 +27,19 @@ export default function SignInScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [googleBusy, setGoogleBusy] = useState(false);
+
+  async function continueWithGoogle() {
+    setGoogleBusy(true);
+    setMessage(null);
+    try {
+      // On success the auth listener updates the session and the router moves on.
+      await signInWithGoogle();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'Could not sign in with Google.');
+    }
+    setGoogleBusy(false);
+  }
 
   async function submit() {
     setBusy(true);
@@ -63,6 +77,31 @@ export default function SignInScreen() {
           <ThemedText themeColor="textSecondary">
             Find people nearby to play, lift, game and hang out with.
           </ThemedText>
+
+          <Pressable
+            disabled={busy}
+            onPress={continueWithGoogle}
+            accessibilityLabel="Continue with Google"
+            style={({ pressed }) => [styles.google, pressed && styles.pressed]}>
+            {googleBusy ? (
+              <ActivityIndicator color="#1F1F1F" />
+            ) : (
+              <>
+                <ThemedText style={styles.googleG}>G</ThemedText>
+                <ThemedText type="smallBold" style={styles.googleLabel}>
+                  Continue with Google
+                </ThemedText>
+              </>
+            )}
+          </Pressable>
+
+          <View style={styles.divider}>
+            <View style={[styles.line, { backgroundColor: theme.backgroundSelected }]} />
+            <ThemedText type="small" themeColor="textSecondary">
+              or use email
+            </ThemedText>
+            <View style={[styles.line, { backgroundColor: theme.backgroundSelected }]} />
+          </View>
 
           <TextInput
             style={inputStyle}
@@ -151,6 +190,37 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     gap: Spacing.three,
+  },
+  // Google's sign-in button style: white, with dark text.
+  google: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.three,
+    borderRadius: Spacing.three,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DADCE0',
+    minHeight: 52,
+  },
+  googleG: {
+    color: '#4285F4',
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: 800,
+  },
+  googleLabel: {
+    color: '#1F1F1F',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  line: {
+    flex: 1,
+    height: 1,
   },
   passwordInput: {
     // Room for the Show/Hide button.
