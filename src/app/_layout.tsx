@@ -86,6 +86,7 @@ function RootNavigator() {
           <Stack.Screen name="demo/chat" options={{ headerShown: true, title: 'Group chat' }} />
           <Stack.Screen name="demo/profile" />
           <Stack.Screen name="demo/intro" />
+          <Stack.Screen name="demo/onboarding" />
           <Stack.Screen name="demo/settings" options={{ headerShown: true, title: 'Settings' }} />
           <Stack.Screen
             name="demo/post"
