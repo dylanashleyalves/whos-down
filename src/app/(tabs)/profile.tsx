@@ -151,12 +151,6 @@ export default function ProfileScreen() {
               );
             })
           )}
-
-          <PrimaryButton
-            label="⚙️ Settings"
-            variant="secondary"
-            onPress={() => router.push('/settings')}
-          />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
