@@ -1,12 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { EmptyState } from '@/components/empty-state';
-import { FeedbackBox } from '@/components/feedback-box';
-import { showIntro } from '@/components/intro-cards';
 import { ProfileChecklist } from '@/components/profile-checklist';
 import { AvatarRing } from '@/components/avatar-ring';
 import { Pill } from '@/components/pill';
@@ -18,13 +16,7 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Brand, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { Categories } from '@/lib/activities';
 import { formatCountry } from '@/lib/countries';
-import {
-  displayName,
-  maskEmail,
-  PROFILE_SUMMARY,
-  type Profile,
-  type ProfileSummary,
-} from '@/lib/profiles';
+import { displayName, type Profile } from '@/lib/profiles';
 import {
   daysSince,
   fetchCrewFriendships,
@@ -33,7 +25,6 @@ import {
   type CrewFriendship,
   type UserStats,
 } from '@/lib/ranks';
-import { registerForPush, unregisterForPush } from '@/lib/notifications';
 import { shareProfile } from '@/lib/share';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -42,40 +33,21 @@ import { useAuth } from '@/providers/auth-provider';
 const NUDGE_AFTER_DAYS = 21;
 
 export default function ProfileScreen() {
-  const { session, profile, privateProfile, isAdmin, refreshProfile } = useAuth();
-  const notificationsOn = privateProfile?.notifications_enabled !== false;
-
-  async function setNotifications(on: boolean) {
-    await supabase
-      .from('profile_private')
-      .update({ notifications_enabled: on })
-      .eq('id', session?.user.id ?? '');
-    await refreshProfile();
-    if (on) registerForPush();
-  }
+  const { session, profile, isAdmin } = useAuth();
   const [crew, setCrew] = useState<Profile[]>([]);
-  const [blocked, setBlocked] = useState<ProfileSummary[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [friendships, setFriendships] = useState<Map<string, CrewFriendship>>(new Map());
 
   const load = useCallback(async () => {
     const userId = session?.user.id ?? '';
-    const [connections, blocks, myStats, crewFriendships] = await Promise.all([
+    const [connections, myStats, crewFriendships] = await Promise.all([
       supabase.rpc('my_connections'),
-      supabase
-        .from('blocks')
-        .select(`blocked:profiles!blocks_blocked_id_fkey(${PROFILE_SUMMARY})`)
-        .eq('blocker_id', userId),
       fetchUserStats(userId),
       fetchCrewFriendships(),
     ]);
     setStats(myStats);
     setFriendships(crewFriendships);
     setCrew((connections.data as Profile[]) ?? []);
-    const rows = (blocks.data ?? []) as unknown as {
-      blocked: ProfileSummary | null;
-    }[];
-    setBlocked(rows.flatMap((row) => (row.blocked ? [row.blocked] : [])));
   }, [session?.user.id]);
 
   useFocusEffect(
@@ -84,20 +56,18 @@ export default function ProfileScreen() {
     }, [load])
   );
 
-  async function unblock(id: string) {
-    await supabase
-      .from('blocks')
-      .delete()
-      .eq('blocker_id', session?.user.id ?? '')
-      .eq('blocked_id', id);
-    load();
-  }
-
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.header}>
+            <Pressable
+              onPress={() => router.push('/settings')}
+              hitSlop={8}
+              accessibilityLabel="Settings"
+              style={({ pressed }) => [styles.gear, pressed && styles.pressed]}>
+              <ThemedText style={styles.gearIcon}>⚙️</ThemedText>
+            </Pressable>
             <ProfileCover bio={profile?.bio} interests={profile?.interests}>
               <AvatarRing profile={profile} size={88} />
             </ProfileCover>
@@ -182,57 +152,10 @@ export default function ProfileScreen() {
             })
           )}
 
-          {blocked.length > 0 && (
-            <>
-              <ThemedText type="smallBold">Blocked ({blocked.length})</ThemedText>
-              {blocked.map((person) => (
-                <View key={person.id} style={styles.friend}>
-                  <Avatar profile={person} />
-                  <ThemedText type="smallBold" style={styles.grow}>
-                    {displayName(person)}
-                  </ThemedText>
-                  <Pressable onPress={() => unblock(person.id)}>
-                    <ThemedText type="linkPrimary">Unblock</ThemedText>
-                  </Pressable>
-                </View>
-              ))}
-            </>
-          )}
-
-          <ThemedView type="backgroundElement" style={styles.setting}>
-            <View style={styles.grow}>
-              <ThemedText type="smallBold">Notifications</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Messages, people joining, and reminders before your activities.
-              </ThemedText>
-            </View>
-            <Switch
-              value={notificationsOn}
-              onValueChange={setNotifications}
-              trackColor={{ true: '#3c87f7' }}
-            />
-          </ThemedView>
-
-          <FeedbackBox />
-
-          <Pressable onPress={showIntro} style={styles.link}>
-            <ThemedText type="linkPrimary">How Who&apos;s Down works</ThemedText>
-          </Pressable>
-          <Pressable onPress={() => router.push('/guidelines')} style={styles.link}>
-            <ThemedText type="linkPrimary">Community guidelines</ThemedText>
-          </Pressable>
-
-          <ThemedText type="small" themeColor="textSecondary" style={styles.email}>
-            Signed in as {maskEmail(session?.user.email)}
-          </ThemedText>
           <PrimaryButton
-            label="Sign out"
+            label="⚙️ Settings"
             variant="secondary"
-            onPress={async () => {
-              // Stop this phone getting the next person's notifications.
-              await unregisterForPush();
-              await supabase.auth.signOut();
-            }}
+            onPress={() => router.push('/settings')}
           />
         </ScrollView>
       </SafeAreaView>
@@ -280,20 +203,24 @@ const styles = StyleSheet.create({
   nudge: {
     color: '#3c87f7',
   },
-  setting: {
-    flexDirection: 'row',
+  // Over the top-right corner of the cover.
+  gear: {
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.two,
+    zIndex: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#00000059',
     alignItems: 'center',
-    gap: Spacing.three,
-    padding: Spacing.four,
-    borderRadius: Spacing.four,
-    marginTop: Spacing.three,
+    justifyContent: 'center',
   },
-  link: {
-    alignSelf: 'center',
-    marginTop: Spacing.three,
+  gearIcon: {
+    fontSize: 20,
+    lineHeight: 26,
   },
-  email: {
-    marginTop: Spacing.four,
-    textAlign: 'center',
+  pressed: {
+    opacity: 0.6,
   },
 });

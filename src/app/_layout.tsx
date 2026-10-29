@@ -8,10 +8,13 @@ import { PushSetup } from '@/components/push-setup';
 import { AnimatedSplashOverlay } from '@/components/splash-overlay';
 import { SuspendedScreen } from '@/components/suspended-screen';
 import { ToastHost } from '@/components/toast-host';
+import { loadThemePreference } from '@/lib/appearance';
 import { isSetupComplete } from '@/lib/profiles';
 import { AuthProvider, useAuth } from '@/providers/auth-provider';
 
 SplashScreen.preventAutoHideAsync();
+// Light or dark mode, if the user picked one in Settings.
+loadThemePreference();
 
 function RootNavigator() {
   const { session, profile, privateProfile, isBanned, isLoading } = useAuth();
@@ -58,6 +61,7 @@ function RootNavigator() {
           />
           <Stack.Screen name="user/[id]" options={{ headerShown: true, title: 'Profile' }} />
           <Stack.Screen name="admin" options={{ headerShown: true, title: 'Moderation' }} />
+          <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings' }} />
           <Stack.Screen
             name="report"
             options={{ presentation: 'modal', headerShown: true, title: 'Report' }}
@@ -80,7 +84,11 @@ function RootNavigator() {
           <Stack.Screen name="demo/chat" options={{ headerShown: true, title: 'Group chat' }} />
           <Stack.Screen name="demo/profile" />
           <Stack.Screen name="demo/intro" />
-          <Stack.Screen name="demo/post" options={{ headerShown: true, title: 'Post an activity' }} />
+          <Stack.Screen name="demo/settings" options={{ headerShown: true, title: 'Settings' }} />
+          <Stack.Screen
+            name="demo/post"
+            options={{ headerShown: true, title: 'Post an activity' }}
+          />
         </Stack.Protected>
       </Stack>
       {signedIn && hasProfile && (

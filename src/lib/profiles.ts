@@ -32,6 +32,11 @@ export type PrivateProfile = {
   confirmed_guy_at: string | null;
   gender: Gender | null;
   notifications_enabled: boolean;
+  // Each type of notification. Missing until 0013_settings.sql has been run.
+  notify_messages?: boolean;
+  notify_joins?: boolean;
+  notify_reminders?: boolean;
+  notify_nudges?: boolean;
   last_seen_at: string | null;
 };
 

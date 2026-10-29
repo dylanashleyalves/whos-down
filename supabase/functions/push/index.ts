@@ -11,7 +11,16 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-type Push = { userId: string; title: string; body: string; href: string };
+// Which Settings switch each push belongs to (columns on profile_private, see 0013_settings.sql).
+type Kind = 'messages' | 'joins' | 'reminders' | 'nudges';
+const SWITCH: Record<Kind, string> = {
+  messages: 'notify_messages',
+  joins: 'notify_joins',
+  reminders: 'notify_reminders',
+  nudges: 'notify_nudges',
+};
+
+type Push = { userId: string; kind: Kind; title: string; body: string; href: string };
 
 const MINUTE = 60 * 1000;
 const PREVIEW_LENGTH = 120;
@@ -21,7 +30,11 @@ function preview(text: string) {
 }
 
 async function nameOf(userId: string) {
-  const { data } = await supabase.from('profiles').select('display_name').eq('id', userId).maybeSingle();
+  const { data } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', userId)
+    .maybeSingle();
   return (data?.display_name as string | undefined) ?? 'Someone';
 }
 
@@ -66,17 +79,27 @@ async function send(pushes: Push[]) {
   if (pushes.length === 0) return 0;
   const userIds = [...new Set(pushes.map((p) => p.userId))];
 
-  // Respect the on/off switch, and look up each person's phones.
+  // Respect the master switch and each type's switch, and look up each person's phones.
   const [prefs, tokens] = await Promise.all([
-    supabase.from('profile_private').select('id, notifications_enabled').in('id', userIds),
+    supabase
+      .from('profile_private')
+      .select(
+        'id, notifications_enabled, notify_messages, notify_joins, notify_reminders, notify_nudges'
+      )
+      .in('id', userIds),
     supabase.from('push_tokens').select('token, user_id').in('user_id', userIds),
   ]);
-  const muted = new Set(
-    (prefs.data ?? []).filter((p) => p.notifications_enabled === false).map((p) => p.id as string)
+  if (prefs.error) throw prefs.error;
+  const prefsById = new Map(
+    (prefs.data ?? []).map((p) => [p.id as string, p as Record<string, unknown>])
   );
+  const wants = (push: Push) => {
+    const p = prefsById.get(push.userId);
+    return !p || (p.notifications_enabled !== false && p[SWITCH[push.kind]] !== false);
+  };
 
   const messages = pushes.flatMap((push) =>
-    muted.has(push.userId)
+    !wants(push)
       ? []
       : (tokens.data ?? [])
           .filter((t) => t.user_id === push.userId)
@@ -120,6 +143,7 @@ async function onGroupMessage(record: { activity_id: string; user_id: string; bo
   return send(
     recipients.map((userId) => ({
       userId,
+      kind: 'messages' as const,
       title: `💬 ${title}`,
       body: `${sender}: ${preview(record.body)}`,
       href: `/chat/${record.activity_id}`,
@@ -132,6 +156,7 @@ async function onDirectMessage(record: { sender_id: string; recipient_id: string
   return send([
     {
       userId: record.recipient_id,
+      kind: 'messages',
       title: `💬 ${sender}`,
       body: preview(record.body),
       href: `/dm/${record.sender_id}`,
@@ -148,6 +173,7 @@ async function onJoin(record: { activity_id: string; user_id: string }) {
   return send([
     {
       userId: activity.host_id as string,
+      kind: 'joins',
       title: '🙋 Someone is down!',
       body: `${joiner} joined ${activity.title}`,
       href: `/activity/${record.activity_id}`,
@@ -170,6 +196,7 @@ async function reminders() {
     for (const userId of await firstTime(ids, 'starts_soon', activity.id)) {
       pushes.push({
         userId,
+        kind: 'reminders',
         title: '⏰ Starting in an hour',
         body: `${activity.title}. See you there!`,
         href: `/activity/${activity.id}`,
@@ -190,6 +217,7 @@ async function reminders() {
     if ((await firstTime([activity.host_id], 'check_in', activity.id)).length === 0) continue;
     pushes.push({
       userId: activity.host_id,
+      kind: 'reminders',
       title: '📋 Who showed up?',
       body: `Check people in for ${activity.title} to earn XP.`,
       href: `/activity/${activity.id}`,
@@ -204,11 +232,17 @@ async function reminders() {
       .from('profile_private')
       .select('id')
       .eq('notifications_enabled', true)
+      .eq('notify_nudges', true)
       .lt('last_seen_at', new Date(now - 7 * 24 * 60 * MINUTE).toISOString());
     const week = `${date.getUTCFullYear()}-w${Math.floor(now / (7 * 24 * 60 * MINUTE))}`;
-    for (const userId of await firstTime((quiet ?? []).map((q) => q.id as string), 'inactive', week)) {
+    for (const userId of await firstTime(
+      (quiet ?? []).map((q) => q.id as string),
+      'inactive',
+      week
+    )) {
       pushes.push({
         userId,
+        kind: 'nudges',
         title: '👋 Been quiet lately?',
         body: "See who's down this week, or post something and ask people out.",
         href: '/',
