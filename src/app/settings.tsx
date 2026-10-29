@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import { router, useFocusEffect } from 'expo-router';
 import * as Updates from 'expo-updates';
+import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 
@@ -27,6 +28,9 @@ import {
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/auth-provider';
+
+// The app's website, with the privacy policy and terms (docs/ on GitHub Pages).
+const SITE = 'https://dylanashleyalves.github.io/whos-down';
 
 type NotifySwitch = 'notify_messages' | 'notify_joins' | 'notify_reminders' | 'notify_nudges';
 
@@ -252,6 +256,18 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="About">
+          <Row onPress={() => WebBrowser.openBrowserAsync(`${SITE}/privacy.html`)}>
+            <ThemedText type="small" style={styles.grow}>
+              🔒 Privacy policy
+            </ThemedText>
+            <Chevron />
+          </Row>
+          <Row onPress={() => WebBrowser.openBrowserAsync(`${SITE}/terms.html`)}>
+            <ThemedText type="small" style={styles.grow}>
+              📄 Terms of service
+            </ThemedText>
+            <Chevron />
+          </Row>
           <View style={styles.padded}>
             <ThemedText type="small">Who&apos;s Down {version}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
