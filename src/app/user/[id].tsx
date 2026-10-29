@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AvatarRing } from '@/components/avatar-ring';
 import { Pill } from '@/components/pill';
+import { KudosPills } from '@/components/kudos-pills';
 import { ProfileCover } from '@/components/profile-cover';
 import { PrimaryButton } from '@/components/primary-button';
 import { RankCard } from '@/components/rank-card';
@@ -129,6 +130,8 @@ export default function UserScreen() {
             ))}
           </View>
         )}
+
+        <KudosPills userId={person.id} />
 
         {stats && <RankCard stats={stats} />}
 

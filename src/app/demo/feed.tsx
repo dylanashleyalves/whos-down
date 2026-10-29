@@ -54,6 +54,16 @@ export default function DemoFeedScreen() {
             ))}
           </ScrollView>
 
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.row}>
+            <Chip label="Any time" selected={false} onPress={() => {}} />
+            <Chip label="⚡ Next 2 hours" color={Brand.pink} selected onPress={() => {}} />
+            <Chip label="Today" color={Brand.pink} selected={false} onPress={() => {}} />
+            <Chip label="Tomorrow" color={Brand.pink} selected={false} onPress={() => {}} />
+          </ScrollView>
+
           <WelcomeBanner name={DEMO_ME.display_name} place="Singapore" />
 
           <View style={styles.banner}>

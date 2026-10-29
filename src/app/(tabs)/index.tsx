@@ -40,6 +40,25 @@ const MY_PLANS_HISTORY_MS = 30 * 24 * 60 * 60 * 1000;
 
 type FeedView = 'discover' | 'mine';
 
+// The "When" filter on Discover.
+type When = 'soon' | 'today' | 'tomorrow';
+const WHEN: { key: When; label: string }[] = [
+  { key: 'soon', label: '⚡ Next 2 hours' },
+  { key: 'today', label: 'Today' },
+  { key: 'tomorrow', label: 'Tomorrow' },
+];
+
+function startsWithin(activity: ActivityWithPeople, when: When) {
+  const startsAt = new Date(activity.starts_at).getTime();
+  if (when === 'soon') return startsAt <= Date.now() + 2 * 60 * 60 * 1000;
+  const day = new Date();
+  day.setHours(0, 0, 0, 0);
+  if (when === 'tomorrow') day.setDate(day.getDate() + 1);
+  const end = new Date(day);
+  end.setDate(end.getDate() + 1);
+  return startsAt >= day.getTime() && startsAt < end.getTime();
+}
+
 function isMine(activity: ActivityWithPeople, myId: string | undefined) {
   return activity.host_id === myId || activity.members.some((m) => m.user_id === myId);
 }
@@ -87,6 +106,7 @@ export default function FeedScreen() {
   // Which view the list currently holds, so switching shows a spinner, not stale cards.
   const [loadedView, setLoadedView] = useState<FeedView | null>(null);
   const [filter, setFilter] = useState<Category | null>(null);
+  const [when, setWhen] = useState<When | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unread, setUnread] = useState<Map<string, number>>(new Map());
@@ -94,7 +114,11 @@ export default function FeedScreen() {
   // Hosts' recent XP, for the rank badges on cards.
   const [hostXp, setHostXp] = useState<Map<string, number>>(new Map());
 
-  const shown = filter ? activities.filter((a) => a.category === filter) : activities;
+  // My plans includes past activities, so the When filter is only for Discover.
+  const timeFilter = view === 'discover' ? when : null;
+  const shown = activities.filter(
+    (a) => (!filter || a.category === filter) && (!timeFilter || startsWithin(a, timeFilter))
+  );
 
   const load = useCallback(async () => {
     try {
@@ -175,6 +199,26 @@ export default function FeedScreen() {
           </ScrollView>
         </View>
 
+        {view === 'discover' && (
+          <View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filters}>
+              <Chip label="Any time" selected={when === null} onPress={() => setWhen(null)} />
+              {WHEN.map(({ key, label }) => (
+                <Chip
+                  key={key}
+                  label={label}
+                  color={Brand.pink}
+                  selected={when === key}
+                  onPress={() => setWhen(when === key ? null : key)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {view === 'discover' && <QuietReminder />}
 
         {totalUnread > 0 && view === 'discover' && (
@@ -227,6 +271,18 @@ export default function FeedScreen() {
                   title="No plans yet"
                   text="Activities you post or join show up here, with their group chats."
                   action={{ label: 'Find something to join', onPress: () => setView('discover') }}
+                />
+              ) : timeFilter ? (
+                <EmptyState
+                  emoji="⏰"
+                  color={Brand.pink}
+                  title={
+                    timeFilter === 'soon'
+                      ? 'Nothing in the next 2 hours'
+                      : `Nothing on ${timeFilter === 'today' ? 'today' : 'tomorrow'} yet`
+                  }
+                  text="Post something and see who's down, or look at what's on later."
+                  action={{ label: 'Show any time', onPress: () => setWhen(null) }}
                 />
               ) : filter ? (
                 <EmptyState

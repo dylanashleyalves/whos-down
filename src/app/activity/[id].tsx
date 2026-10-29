@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { Avatar } from '@/components/avatar';
 import { CategoryHero } from '@/components/category-hero';
 import { CheckInCard } from '@/components/check-in-card';
+import { Chip } from '@/components/chip';
 import { Pill } from '@/components/pill';
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
@@ -21,6 +22,7 @@ import {
   type ActivityWithPeople,
 } from '@/lib/activities';
 import { confirmAction } from '@/lib/confirm';
+import { canGiveKudos, fetchMyKudos, KUDOS, setKudo, type Kudo } from '@/lib/kudos';
 import { displayName, type ProfileSummary } from '@/lib/profiles';
 import { shareActivity } from '@/lib/share';
 import { showToast } from '@/lib/toast';
@@ -35,6 +37,9 @@ export default function ActivityScreen() {
   const [activity, setActivity] = useState<ActivityWithPeople | null>(null);
   // People I've said I'd hang out with again.
   const [hangAgain, setHangAgain] = useState<Set<string>>(new Set());
+  // Tags I've given each person here, and whose tag picker is open.
+  const [kudos, setKudos] = useState<Map<string, Set<Kudo>>>(new Map());
+  const [kudosFor, setKudosFor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +59,7 @@ export default function ActivityScreen() {
           .eq('from_user', myId)
           .in('to_user', others);
         setHangAgain(new Set((data ?? []).map((row) => row.to_user as string)));
+        if (hasStarted(loaded)) setKudos(await fetchMyKudos(loaded.id));
       }
     } catch (e) {
       // Usually opened from a shared link: it's been deleted, or the database hides it
@@ -119,6 +125,7 @@ export default function ActivityScreen() {
   const isParticipant = isHost || isMember;
   const started = hasStarted(activity);
   const left = spotsLeft(activity);
+  const kudosOpen = canGiveKudos(activity.starts_at);
 
   const people: {
     profile: ProfileSummary | null;
@@ -236,45 +243,86 @@ export default function ActivityScreen() {
           {people.map(({ profile, userId, isHost: hosting }) => {
             const canAsk = started && isParticipant && userId !== myId;
             const asked = hangAgain.has(userId);
+            const given = kudos.get(userId) ?? new Set<Kudo>();
+            const picking = kudosFor === userId;
             return (
-              <View key={userId} style={styles.person}>
-                <Pressable
-                  onPress={() => router.push(`/user/${userId}`)}
-                  style={({ pressed }) => [styles.personTap, pressed && styles.pressed]}>
-                  <Avatar profile={profile} />
-                  <View style={styles.personText}>
-                    <ThemedText type="smallBold">
-                      {displayName(profile)}
-                      {userId === myId ? ' (you)' : ''}
-                    </ThemedText>
-                    {hosting && (
-                      <ThemedText type="small" themeColor="textSecondary">
-                        Host
-                      </ThemedText>
-                    )}
-                  </View>
-                </Pressable>
-                {canAsk && (
+              <View key={userId} style={styles.personBlock}>
+                <View style={styles.person}>
                   <Pressable
-                    disabled={busy}
-                    onPress={() =>
-                      update(() =>
-                        asked
-                          ? supabase
-                              .from('hang_again')
-                              .delete()
-                              .eq('from_user', myId ?? '')
-                              .eq('to_user', userId)
-                          : supabase.from('hang_again').insert({ to_user: userId })
-                      )
-                    }
-                    style={({ pressed }) => pressed && styles.pressed}>
-                    <ThemedView
-                      type={asked ? 'backgroundSelected' : 'backgroundElement'}
-                      style={styles.hangButton}>
-                      <ThemedText type="small">{asked ? '✓ Down again' : 'Hang again?'}</ThemedText>
-                    </ThemedView>
+                    onPress={() => router.push(`/user/${userId}`)}
+                    style={({ pressed }) => [styles.personTap, pressed && styles.pressed]}>
+                    <Avatar profile={profile} />
+                    <View style={styles.personText}>
+                      <ThemedText type="smallBold">
+                        {displayName(profile)}
+                        {userId === myId ? ' (you)' : ''}
+                      </ThemedText>
+                      {hosting && (
+                        <ThemedText type="small" themeColor="textSecondary">
+                          Host
+                        </ThemedText>
+                      )}
+                    </View>
                   </Pressable>
+                  {canAsk && kudosOpen && (
+                    <Pressable
+                      onPress={() => setKudosFor(picking ? null : userId)}
+                      accessibilityLabel={`Give ${displayName(profile)} kudos`}
+                      style={({ pressed }) => pressed && styles.pressed}>
+                      <ThemedView
+                        type={
+                          picking || given.size > 0 ? 'backgroundSelected' : 'backgroundElement'
+                        }
+                        style={styles.hangButton}>
+                        <ThemedText type="small">
+                          👏{given.size > 0 ? ` ${given.size}` : ''}
+                        </ThemedText>
+                      </ThemedView>
+                    </Pressable>
+                  )}
+                  {canAsk && (
+                    <Pressable
+                      disabled={busy}
+                      onPress={() =>
+                        update(() =>
+                          asked
+                            ? supabase
+                                .from('hang_again')
+                                .delete()
+                                .eq('from_user', myId ?? '')
+                                .eq('to_user', userId)
+                            : supabase.from('hang_again').insert({ to_user: userId })
+                        )
+                      }
+                      style={({ pressed }) => pressed && styles.pressed}>
+                      <ThemedView
+                        type={asked ? 'backgroundSelected' : 'backgroundElement'}
+                        style={styles.hangButton}>
+                        <ThemedText type="small">
+                          {asked ? '✓ Down again' : 'Hang again?'}
+                        </ThemedText>
+                      </ThemedView>
+                    </Pressable>
+                  )}
+                </View>
+                {picking && (
+                  <View style={styles.kudos}>
+                    {(Object.keys(KUDOS) as Kudo[]).map((tag) => (
+                      <Chip
+                        key={tag}
+                        label={`${KUDOS[tag].emoji} ${KUDOS[tag].label}`}
+                        color={KUDOS[tag].color}
+                        selected={given.has(tag)}
+                        onPress={() =>
+                          !busy &&
+                          update(
+                            () => setKudo(activity.id, userId, tag, !given.has(tag)),
+                            given.has(tag) ? undefined : `${KUDOS[tag].emoji} Kudos sent`
+                          )
+                        }
+                      />
+                    ))}
+                  </View>
                 )}
               </View>
             );
@@ -285,6 +333,8 @@ export default function ActivityScreen() {
           <ThemedText type="small" themeColor="textSecondary">
             Tap &quot;Hang again?&quot; for anyone you&apos;d meet up with again. They only find out
             if they pick you too, and then you&apos;re in each other&apos;s crew.
+            {kudosOpen &&
+              ' Tap 👏 to say what was great about someone. It shows on their profile, but not who said it.'}
           </ThemedText>
         )}
 
@@ -377,6 +427,14 @@ const styles = StyleSheet.create({
   },
   people: {
     gap: Spacing.three,
+  },
+  personBlock: {
+    gap: Spacing.two,
+  },
+  kudos: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
   },
   person: {
     flexDirection: 'row',

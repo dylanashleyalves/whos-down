@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { AvatarRing } from '@/components/avatar-ring';
 import { Pill } from '@/components/pill';
+import { KudosPills } from '@/components/kudos-pills';
 import { ProfileCover } from '@/components/profile-cover';
 import { DemoTabBar } from '@/components/demo-tab-bar';
 import { PrimaryButton } from '@/components/primary-button';
@@ -52,6 +53,15 @@ export default function DemoProfileScreen() {
               />
             ))}
           </View>
+
+          <KudosPills
+            kudos={[
+              { tag: 'friendly', total: 7 },
+              { tag: 'great_vibes', total: 5 },
+              { tag: 'on_time', total: 4 },
+              { tag: 'skilled', total: 2 },
+            ]}
+          />
 
           <PrimaryButton label="Edit profile" variant="secondary" onPress={() => {}} />
 

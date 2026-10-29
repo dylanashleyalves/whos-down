@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/empty-state';
 import { ProfileChecklist } from '@/components/profile-checklist';
 import { AvatarRing } from '@/components/avatar-ring';
 import { Pill } from '@/components/pill';
+import { KudosPills } from '@/components/kudos-pills';
 import { ProfileCover } from '@/components/profile-cover';
 import { PrimaryButton } from '@/components/primary-button';
 import { RankCard } from '@/components/rank-card';
@@ -93,6 +94,8 @@ export default function ProfileScreen() {
               ))}
             </View>
           )}
+
+          {session && <KudosPills userId={session.user.id} />}
 
           {profile && <ProfileChecklist profile={profile} />}
 
