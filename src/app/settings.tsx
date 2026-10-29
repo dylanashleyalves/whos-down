@@ -32,11 +32,23 @@ import { useAuth } from '@/providers/auth-provider';
 // The app's website, with the privacy policy and terms (docs/ on GitHub Pages).
 const SITE = 'https://dylanashleyalves.github.io/whos-down';
 
-type NotifySwitch = 'notify_messages' | 'notify_joins' | 'notify_reminders' | 'notify_nudges';
+type NotifySwitch =
+  | 'notify_messages'
+  | 'notify_joins'
+  | 'notify_activities'
+  | 'notify_kudos'
+  | 'notify_reminders'
+  | 'notify_nudges';
 
 const NOTIFICATION_TYPES: { key: NotifySwitch; label: string; detail: string }[] = [
   { key: 'notify_messages', label: '💬 Messages', detail: 'Group chats and direct messages' },
   { key: 'notify_joins', label: '🙋 People joining', detail: 'When someone joins your activity' },
+  {
+    key: 'notify_activities',
+    label: '✨ New activities',
+    detail: 'Posts near you that match your interests, up to 3 a day',
+  },
+  { key: 'notify_kudos', label: '👏 Kudos', detail: 'When someone gives you kudos after a meetup' },
   {
     key: 'notify_reminders',
     label: '⏰ Reminders',

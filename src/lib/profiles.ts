@@ -1,3 +1,4 @@
+import type { FreeTime, Status } from '@/lib/availability';
 import type { Category } from '@/lib/activities';
 import { supabase } from '@/lib/supabase';
 
@@ -11,6 +12,10 @@ export type Profile = {
   interests: Category[];
   avatar_url: string | null;
   created_at: string;
+  // Availability (0015). Optional so sample profiles can leave them out.
+  status?: Status | null;
+  status_until?: string | null;
+  free_times?: FreeTime[];
 };
 
 export type ProfileSummary = Pick<Profile, 'id' | 'display_name' | 'avatar_url'>;
@@ -37,6 +42,8 @@ export type PrivateProfile = {
   notify_joins?: boolean;
   notify_reminders?: boolean;
   notify_nudges?: boolean;
+  notify_activities?: boolean;
+  notify_kudos?: boolean;
   last_seen_at: string | null;
 };
 

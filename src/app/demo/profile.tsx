@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { AvatarRing } from '@/components/avatar-ring';
 import { Pill } from '@/components/pill';
+import { Availability, StatusPicker } from '@/components/availability';
 import { KudosPills } from '@/components/kudos-pills';
 import { ProfileCover } from '@/components/profile-cover';
 import { DemoTabBar } from '@/components/demo-tab-bar';
@@ -41,6 +42,14 @@ export default function DemoProfileScreen() {
             <ThemedText themeColor="textSecondary">📍 {me.city} · Singapore</ThemedText>
           </View>
 
+          <Availability
+            profile={{
+              status: 'free_tonight',
+              status_until: '2099-01-01T00:00:00Z',
+              free_times: ['weekday_evenings', 'weekend_daytime'],
+            }}
+          />
+
           <ThemedText style={styles.center}>{me.bio}</ThemedText>
 
           <View style={styles.interests}>
@@ -62,6 +71,8 @@ export default function DemoProfileScreen() {
               { tag: 'skilled', total: 2 },
             ]}
           />
+
+          <StatusPicker />
 
           <PrimaryButton label="Edit profile" variant="secondary" onPress={() => {}} />
 

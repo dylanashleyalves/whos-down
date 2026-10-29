@@ -20,6 +20,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Categories, type Category } from '@/lib/activities';
+import { FREE_TIMES, type FreeTime } from '@/lib/availability';
 import { deviceCountry } from '@/lib/countries';
 import { ageOn, GENDERS, MIN_AGE, parseBirthdate, uploadAvatar, type Gender } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
@@ -49,6 +50,7 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
   const [city, setCity] = useState(profile?.city ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [interests, setInterests] = useState<Category[]>(profile?.interests ?? []);
+  const [freeTimes, setFreeTimes] = useState<FreeTime[]>(profile?.free_times ?? []);
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +75,12 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
   function toggleInterest(key: Category) {
     setInterests(
       interests.includes(key) ? interests.filter((item) => item !== key) : [...interests, key]
+    );
+  }
+
+  function toggleFreeTime(key: FreeTime) {
+    setFreeTimes(
+      freeTimes.includes(key) ? freeTimes.filter((item) => item !== key) : [...freeTimes, key]
     );
   }
 
@@ -122,6 +130,7 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
         country,
         bio: bio.trim() || null,
         interests,
+        free_times: freeTimes,
         avatar_url: avatarUrl,
       });
       if (error) throw error;
@@ -212,6 +221,19 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
                   color={Categories[key].color}
                   selected={interests.includes(key)}
                   onPress={() => toggleInterest(key)}
+                />
+              ))}
+            </View>
+          </Field>
+
+          <Field label="When are you usually free? (optional)">
+            <View style={styles.wrap}>
+              {(Object.keys(FREE_TIMES) as FreeTime[]).map((key) => (
+                <Chip
+                  key={key}
+                  label={FREE_TIMES[key]}
+                  selected={freeTimes.includes(key)}
+                  onPress={() => toggleFreeTime(key)}
                 />
               ))}
             </View>

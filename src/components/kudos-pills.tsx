@@ -12,7 +12,7 @@ type KudosPillsProps = {
   kudos?: KudoCount[];
 };
 
-// "What people say": the tags someone has been given after meetups. Hidden until they have any.
+// "What people think": the tags someone has been given after meetups. Hidden until they have any.
 export function KudosPills({ userId, kudos }: KudosPillsProps) {
   const [loaded, setLoaded] = useState<KudoCount[]>([]);
 
@@ -26,7 +26,7 @@ export function KudosPills({ userId, kudos }: KudosPillsProps) {
 
   return (
     <View style={styles.container}>
-      <ThemedText type="smallBold">What people say</ThemedText>
+      <ThemedText type="smallBold">What people think</ThemedText>
       <View style={styles.pills}>
         {shown.map(({ tag, total }) => (
           <Pill

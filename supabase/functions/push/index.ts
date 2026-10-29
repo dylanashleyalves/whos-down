@@ -1,5 +1,6 @@
 // Sends push notifications through Expo's push service.
-// Called by database triggers (new group message, direct message, someone joining) and
+// Called by database triggers (new group message, direct message, someone joining, a new
+// activity, kudos) and
 // every 15 minutes by a cron job for reminders. See 0011_push_notifications.sql.
 //
 // Secret (Supabase Dashboard -> Edge Functions -> Secrets):
@@ -11,19 +12,24 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-// Which Settings switch each push belongs to (columns on profile_private, see 0013_settings.sql).
-type Kind = 'messages' | 'joins' | 'reminders' | 'nudges';
+// Which Settings switch each push belongs to (columns on profile_private, see
+// 0013_settings.sql and 0015_availability_and_alerts.sql).
+type Kind = 'messages' | 'joins' | 'reminders' | 'nudges' | 'activities' | 'kudos';
 const SWITCH: Record<Kind, string> = {
   messages: 'notify_messages',
   joins: 'notify_joins',
   reminders: 'notify_reminders',
   nudges: 'notify_nudges',
+  activities: 'notify_activities',
+  kudos: 'notify_kudos',
 };
 
 type Push = { userId: string; kind: Kind; title: string; body: string; href: string };
 
 const MINUTE = 60 * 1000;
 const PREVIEW_LENGTH = 120;
+// At most this many "new activity" alerts per person a day.
+const ACTIVITY_ALERTS_PER_DAY = 3;
 
 function preview(text: string) {
   return text.length > PREVIEW_LENGTH ? `${text.slice(0, PREVIEW_LENGTH - 1)}…` : text;
@@ -84,7 +90,7 @@ async function send(pushes: Push[]) {
     supabase
       .from('profile_private')
       .select(
-        'id, notifications_enabled, notify_messages, notify_joins, notify_reminders, notify_nudges'
+        'id, notifications_enabled, notify_messages, notify_joins, notify_reminders, notify_nudges, notify_activities, notify_kudos'
       )
       .in('id', userIds),
     supabase.from('push_tokens').select('token, user_id').in('user_id', userIds),
@@ -181,6 +187,107 @@ async function onJoin(record: { activity_id: string; user_id: string }) {
   ]);
 }
 
+// Same labels as Categories in src/lib/activities.ts.
+const CATEGORY_EMOJI: Record<string, string> = {
+  sports: '🏀',
+  gym: '🏋️',
+  gaming: '🎮',
+  food: '🍜',
+  outdoors: '🥾',
+  hangout: '🍻',
+};
+
+// A new activity: tell people in the same country who have its type as an interest, can
+// join it (guys-only / girls-only), aren't busy, and haven't had 3 of these today.
+async function onActivity(record: {
+  id: string;
+  host_id: string;
+  title: string;
+  category: string;
+  country: string | null;
+  audience: string;
+  starts_at: string;
+}) {
+  if (!record.country) return 0;
+  const now = new Date().toISOString();
+  const { data: people } = await supabase
+    .from('profiles')
+    .select('id, status, status_until')
+    .eq('country', record.country)
+    .contains('interests', [record.category])
+    .neq('id', record.host_id);
+  let ids = (people ?? [])
+    .filter((p) => !(p.status === 'busy' && p.status_until && p.status_until > now))
+    .map((p) => p.id as string);
+
+  if (record.audience !== 'everyone' && ids.length > 0) {
+    const { data: genders } = await supabase
+      .from('profile_private')
+      .select('id')
+      .in('id', ids)
+      .eq('gender', record.audience === 'guys' ? 'guy' : 'girl');
+    ids = (genders ?? []).map((g) => g.id as string);
+  }
+  ids = await withoutBlocked(ids, record.host_id);
+  if (ids.length === 0) return 0;
+
+  const { data: today } = await supabase
+    .from('notification_log')
+    .select('user_id')
+    .eq('kind', 'new_activity')
+    .in('user_id', ids)
+    .gte('sent_at', new Date(Date.now() - 24 * 60 * MINUTE).toISOString());
+  const counts = new Map<string, number>();
+  for (const row of today ?? []) counts.set(row.user_id, (counts.get(row.user_id) ?? 0) + 1);
+  ids = ids.filter((id) => (counts.get(id) ?? 0) < ACTIVITY_ALERTS_PER_DAY);
+
+  const host = await nameOf(record.host_id);
+  const recipients = await firstTime(ids, 'new_activity', record.id);
+  return send(
+    recipients.map((userId) => ({
+      userId,
+      kind: 'activities' as const,
+      title: `${CATEGORY_EMOJI[record.category] ?? '✨'} Who's down?`,
+      body: `${host} posted: ${preview(record.title)}`,
+      href: `/activity/${record.id}`,
+    }))
+  );
+}
+
+// Kudos never say who gave them. One push per person per activity, however many tags.
+const KUDOS_LABEL: Record<string, string> = {
+  friendly: '😊 Friendly',
+  on_time: '⏰ On time',
+  great_vibes: '✨ Great vibes',
+  welcoming: '🤗 Welcoming',
+  funny: '😂 Funny',
+  skilled: '🏆 Skilled',
+};
+
+async function onKudos(record: {
+  activity_id: string;
+  from_user: string;
+  to_user: string;
+  tag: string;
+}) {
+  const ref = `${record.activity_id}:${record.from_user}`;
+  if ((await firstTime([record.to_user], 'kudos', ref)).length === 0) return 0;
+  const { data: activity } = await supabase
+    .from('activities')
+    .select('title')
+    .eq('id', record.activity_id)
+    .maybeSingle();
+  return send([
+    {
+      userId: record.to_user,
+      kind: 'kudos',
+      title: '👏 You got kudos!',
+      body: `Someone from ${activity?.title ?? 'your meetup'} thinks you're ${KUDOS_LABEL[record.tag] ?? 'great'}. Down to hang again?`,
+      href: '/profile',
+    },
+  ]);
+}
+
 async function reminders() {
   const now = Date.now();
   const pushes: Push[] = [];
@@ -267,9 +374,13 @@ Deno.serve(async (request) => {
           ? await onDirectMessage(record)
           : type === 'join'
             ? await onJoin(record)
-            : type === 'reminders'
-              ? await reminders()
-              : 0;
+            : type === 'activity'
+              ? await onActivity(record)
+              : type === 'kudos'
+                ? await onKudos(record)
+                : type === 'reminders'
+                  ? await reminders()
+                  : 0;
     return new Response(`Sent ${sent}`, { status: 200 });
   } catch (error) {
     // Reply with the error, so it shows up in net._http_response from the SQL Editor.

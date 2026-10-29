@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AvatarRing } from '@/components/avatar-ring';
 import { Pill } from '@/components/pill';
+import { Availability } from '@/components/availability';
 import { KudosPills } from '@/components/kudos-pills';
 import { ProfileCover } from '@/components/profile-cover';
 import { PrimaryButton } from '@/components/primary-button';
@@ -115,6 +116,8 @@ export default function UserScreen() {
               .join(' · ')}
           </ThemedText>
         </View>
+
+        <Availability profile={person} />
 
         {person.bio && <ThemedText style={styles.center}>{person.bio}</ThemedText>}
 

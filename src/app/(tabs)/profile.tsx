@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Availability, StatusPicker } from '@/components/availability';
 import { Avatar } from '@/components/avatar';
 import { EmptyState } from '@/components/empty-state';
 import { ProfileChecklist } from '@/components/profile-checklist';
@@ -16,6 +17,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Brand, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { Categories } from '@/lib/activities';
+import { currentStatus, STATUSES } from '@/lib/availability';
 import { formatCountry } from '@/lib/countries';
 import { displayName, type Profile } from '@/lib/profiles';
 import {
@@ -80,6 +82,8 @@ export default function ProfileScreen() {
             </ThemedText>
           </View>
 
+          <Availability profile={profile} />
+
           {profile?.bio && <ThemedText style={styles.bio}>{profile.bio}</ThemedText>}
 
           {profile && profile.interests.length > 0 && (
@@ -98,6 +102,8 @@ export default function ProfileScreen() {
           {session && <KudosPills userId={session.user.id} />}
 
           {profile && <ProfileChecklist profile={profile} />}
+
+          <StatusPicker />
 
           {stats && <RankCard stats={stats} />}
 
@@ -131,6 +137,7 @@ export default function ProfileScreen() {
             crew.map((friend) => {
               const together = friendships.get(friend.id);
               const daysApart = together?.last_together ? daysSince(together.last_together) : null;
+              const friendStatus = currentStatus(friend);
               return (
                 <Pressable
                   key={friend.id}
@@ -138,8 +145,12 @@ export default function ProfileScreen() {
                   style={styles.friend}>
                   <Avatar profile={friend} />
                   <View style={styles.grow}>
-                    <ThemedText type="smallBold">{displayName(friend)}</ThemedText>
+                    <ThemedText type="smallBold">
+                      {displayName(friend)}
+                      {friendStatus && ` ${STATUSES[friendStatus].emoji}`}
+                    </ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
+                      {friendStatus && `${STATUSES[friendStatus].label} · `}
                       {friendshipLevel(together?.times_together ?? 0)}
                       {daysApart !== null &&
                         ` · ${daysApart === 0 ? 'hung out today' : `last hung out ${daysApart}d ago`}`}
