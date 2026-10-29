@@ -31,6 +31,33 @@ const PREVIEW_LENGTH = 120;
 // Errors Expo reported for this request's notifications, so they show up in the reply
 // (net._http_response in the SQL Editor). Reset for each request.
 let deliveryErrors: string[] = [];
+let ticketIds: string[] = [];
+
+// Expo hands each notification to Google (Android) or Apple a moment after accepting it.
+// Asks how that went, so failures there (e.g. bad Firebase credentials) show up too.
+async function checkReceipts() {
+  if (ticketIds.length === 0) return;
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+  const response = await fetch('https://exp.host/--/api/v2/push/getReceipts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ ids: ticketIds }),
+  });
+  const result = await response.json();
+  const receipts = Object.values(result.data ?? {}) as {
+    status: string;
+    message?: string;
+    details?: { error?: string };
+  }[];
+  for (const receipt of receipts) {
+    if (receipt.status === 'error') {
+      deliveryErrors.push(`${receipt.details?.error ?? ''} ${receipt.message ?? ''}`.trim());
+    }
+  }
+  if (receipts.length < ticketIds.length) {
+    deliveryErrors.push(`${ticketIds.length - receipts.length} not delivered yet`);
+  }
+}
 
 // At most this many "new activity" alerts per person a day.
 const ACTIVITY_ALERTS_PER_DAY = 3;
@@ -133,8 +160,13 @@ async function send(pushes: Push[]) {
     });
     const result = await response.json();
     if (!response.ok || result.errors) deliveryErrors.push(JSON.stringify(result.errors ?? result));
-    for (const ticket of (result.data ?? []) as { status: string; message?: string }[]) {
+    for (const ticket of (result.data ?? []) as {
+      status: string;
+      id?: string;
+      message?: string;
+    }[]) {
       if (ticket.status === 'error') deliveryErrors.push(ticket.message ?? 'unknown error');
+      else if (ticket.id) ticketIds.push(ticket.id);
     }
     // Forget phones that uninstalled the app or turned notifications off at the system level.
     const dead = ((result.data ?? []) as { status: string; details?: { error?: string } }[])
@@ -376,6 +408,7 @@ Deno.serve(async (request) => {
   try {
     const { type, record } = await request.json();
     deliveryErrors = [];
+    ticketIds = [];
     const sent =
       type === 'message'
         ? await onGroupMessage(record)
@@ -390,6 +423,7 @@ Deno.serve(async (request) => {
                 : type === 'reminders'
                   ? await reminders()
                   : 0;
+    await checkReceipts();
     const problems = deliveryErrors.length > 0 ? ` (errors: ${deliveryErrors.join('; ')})` : '';
     return new Response(`Sent ${sent}${problems}`, { status: 200 });
   } catch (error) {
