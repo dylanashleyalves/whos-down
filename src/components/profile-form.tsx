@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -21,10 +21,21 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Categories, type Category } from '@/lib/activities';
 import { FREE_TIMES, type FreeTime } from '@/lib/availability';
+import { hasContactDetails } from '@/lib/contact-details';
 import { deviceCountry } from '@/lib/countries';
 import { ageOn, GENDERS, MIN_AGE, parseBirthdate, uploadAvatar, type Gender } from '@/lib/profiles';
+import {
+  cleanHandle,
+  fetchSocials,
+  isInstagramHandle,
+  isTelegramHandle,
+  saveSocials,
+} from '@/lib/socials';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
+
+const BIO_CONTACT_MESSAGE =
+  'Keep handles, links and phone numbers out of your bio. You can add socials in Edit profile, where only your crew can see them.';
 
 type ProfileFormProps = {
   header?: ReactNode;
@@ -51,11 +62,24 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [interests, setInterests] = useState<Category[]>(profile?.interests ?? []);
   const [freeTimes, setFreeTimes] = useState<FreeTime[]>(profile?.free_times ?? []);
+  const [instagram, setInstagram] = useState('');
+  const [telegram, setTelegram] = useState('');
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const userId = session?.user.id;
+  const bioHasContact = hasContactDetails(bio);
+
+  // Socials are for your crew, so they're added later from Edit profile, not during setup.
+  useEffect(() => {
+    if (needsSetup || !userId) return;
+    fetchSocials(userId).then((socials) => {
+      setInstagram(socials?.instagram ?? '');
+      setTelegram(socials?.telegram ?? '');
+    });
+  }, [needsSetup, userId]);
+
   const preview = {
     display_name: displayName,
     avatar_url: photo?.uri ?? profile?.avatar_url ?? null,
@@ -96,6 +120,21 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
     }
     if (needsGender && !gender) {
       setError('Choose whether you’re a guy or a girl, or prefer not to say.');
+      return;
+    }
+
+    if (bioHasContact) {
+      setError(BIO_CONTACT_MESSAGE);
+      return;
+    }
+    const instagramHandle = cleanHandle(instagram);
+    const telegramHandle = cleanHandle(telegram);
+    if (instagramHandle && !isInstagramHandle(instagramHandle)) {
+      setError('That Instagram username doesn’t look right.');
+      return;
+    }
+    if (telegramHandle && !isTelegramHandle(telegramHandle)) {
+      setError('That Telegram username doesn’t look right. It needs at least 5 characters.');
       return;
     }
 
@@ -148,6 +187,13 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
           .update({ gender })
           .eq('id', userId);
         if (error) throw error;
+      }
+
+      if (!needsSetup) {
+        await saveSocials(userId, {
+          instagram: instagramHandle || null,
+          telegram: telegramHandle || null,
+        });
       }
 
       await refreshProfile();
@@ -249,7 +295,41 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
               value={bio}
               onChangeText={setBio}
             />
+            {bioHasContact && (
+              <ThemedText type="small" style={styles.bioWarning}>
+                {BIO_CONTACT_MESSAGE}
+              </ThemedText>
+            )}
           </Field>
+
+          {!needsSetup && (
+            <Field label="Socials (optional)">
+              <TextInput
+                style={inputStyle}
+                placeholder="Instagram username"
+                placeholderTextColor={theme.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={100}
+                value={instagram}
+                onChangeText={setInstagram}
+              />
+              <TextInput
+                style={inputStyle}
+                placeholder="Telegram username"
+                placeholderTextColor={theme.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={100}
+                value={telegram}
+                onChangeText={setTelegram}
+              />
+              <ThemedText type="small" themeColor="textSecondary">
+                🔒 Only your crew can see these: people you&apos;ve met who also tapped &quot;Hang
+                again?&quot;.
+              </ThemedText>
+            </Field>
+          )}
 
           {needsGender && (
             <Field label="I am a">
@@ -387,6 +467,9 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  bioWarning: {
+    color: '#e5484d',
+  },
   container: {
     flex: 1,
     flexDirection: 'row',

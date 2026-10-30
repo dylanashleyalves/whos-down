@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
@@ -19,6 +20,7 @@ import { canMessage } from '@/lib/dms';
 import { displayName, type Profile } from '@/lib/profiles';
 import { fetchUserStats, type UserStats } from '@/lib/ranks';
 import { shareProfile } from '@/lib/share';
+import { fetchSocials, type Socials } from '@/lib/socials';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -33,11 +35,13 @@ export default function UserScreen() {
   const [stats, setStats] = useState<UserStats | null>(null);
   // Crew members can message each other.
   const [inCrew, setInCrew] = useState(false);
+  // Only comes back if we're in each other's crew.
+  const [socials, setSocials] = useState<Socials | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [profile, block, theirStats, crew] = await Promise.all([
+    const [profile, block, theirStats, crew, theirSocials] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
       supabase
         .from('blocks')
@@ -46,12 +50,14 @@ export default function UserScreen() {
         .eq('blocked_id', id),
       fetchUserStats(id),
       myId && myId !== id ? canMessage(myId, id) : Promise.resolve(false),
+      myId && myId !== id ? fetchSocials(id) : Promise.resolve(null),
     ]);
     if (profile.error) setError(profile.error.message);
     setPerson(profile.data as Profile | null);
     setBlocked((block.data ?? []).length > 0);
     setStats(theirStats);
     setInCrew(crew);
+    setSocials(theirSocials);
   }, [id, myId]);
 
   useFocusEffect(
@@ -153,7 +159,25 @@ export default function UserScreen() {
         {!isMe && (
           <View style={styles.actions}>
             {inCrew ? (
-              <PrimaryButton label="💬 Message" onPress={() => router.push(`/dm/${id}`)} />
+              <>
+                <PrimaryButton label="💬 Message" onPress={() => router.push(`/dm/${id}`)} />
+                {socials?.instagram && (
+                  <PrimaryButton
+                    label={`📸 Instagram: ${socials.instagram}`}
+                    variant="secondary"
+                    onPress={() =>
+                      Linking.openURL(`https://www.instagram.com/${socials.instagram}`)
+                    }
+                  />
+                )}
+                {socials?.telegram && (
+                  <PrimaryButton
+                    label={`✈️ Telegram: ${socials.telegram}`}
+                    variant="secondary"
+                    onPress={() => Linking.openURL(`https://t.me/${socials.telegram}`)}
+                  />
+                )}
+              </>
             ) : (
               myId !== id && (
                 <ThemedView type="backgroundElement" style={styles.locked}>

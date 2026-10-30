@@ -30,7 +30,11 @@ const RULES = [
   },
   {
     title: 'No selling or spam',
-    body: "Activities are for hanging out, not for promoting businesses, selling things, or recruiting.",
+    body: 'Activities are for hanging out, not for promoting businesses, selling things, or recruiting.',
+  },
+  {
+    title: 'Keep contact details private',
+    body: "Don't put social handles, phone numbers or links in your bio or activity posts. Who's Down isn't a place to collect followers. You can add socials in Edit profile, where only your crew can see them.",
   },
   {
     title: 'Look out for each other',
