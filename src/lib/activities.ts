@@ -114,3 +114,9 @@ export function isCheckInOpen(activity: Pick<Activity, 'starts_at'>) {
 export function needsCheckIn(activity: Pick<Activity, 'starts_at' | 'checked_in_at'>) {
   return !activity.checked_in_at && isCheckInOpen(activity);
 }
+
+// Opens Google Maps with directions to where an activity is. No API key needed.
+export function directionsUrl(location: string, country?: string | null) {
+  const destination = country ? `${location}, ${country}` : location;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+}

@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -17,11 +18,13 @@ import {
   fetchActivity,
   formatDay,
   formatTime,
+  directionsUrl,
   hasStarted,
   spotsLeft,
   type ActivityWithPeople,
 } from '@/lib/activities';
 import { confirmAction } from '@/lib/confirm';
+import { findCountry } from '@/lib/countries';
 import { canGiveKudos, fetchMyKudos, KUDOS, setKudo, type Kudo } from '@/lib/kudos';
 import { displayName, type ProfileSummary } from '@/lib/profiles';
 import { shareActivity } from '@/lib/share';
@@ -31,7 +34,7 @@ import { useAuth } from '@/providers/auth-provider';
 
 export default function ActivityScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const myId = session?.user.id;
 
   const [activity, setActivity] = useState<ActivityWithPeople | null>(null);
@@ -118,6 +121,12 @@ export default function ActivityScreen() {
     );
   }
 
+  function openDirections() {
+    if (!activity) return;
+    const country = findCountry(profile?.country)?.name;
+    Linking.openURL(directionsUrl(activity.location, country));
+  }
+
   const startsAt = new Date(activity.starts_at);
   const category = Categories[activity.category];
   const isHost = activity.host_id === myId;
@@ -161,7 +170,14 @@ export default function ActivityScreen() {
           <ThemedText>
             🕒 {formatDay(startsAt)} · {formatTime(startsAt)}
           </ThemedText>
-          <ThemedText>📍 {activity.location}</ThemedText>
+          <Pressable
+            onPress={openDirections}
+            accessibilityRole="link"
+            accessibilityLabel={`Get directions to ${activity.location}`}
+            style={({ pressed }) => pressed && styles.pressed}>
+            <ThemedText>📍 {activity.location}</ThemedText>
+            <ThemedText type="linkPrimary">🗺️ Get directions</ThemedText>
+          </Pressable>
           {activity.details && (
             <ThemedText type="small" themeColor="textSecondary">
               {activity.details}

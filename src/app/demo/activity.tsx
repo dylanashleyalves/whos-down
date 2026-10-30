@@ -36,6 +36,7 @@ export default function DemoActivityScreen() {
             🕒 {formatDay(startsAt)} · {formatTime(startsAt)}
           </ThemedText>
           <ThemedText>📍 {activity.location}</ThemedText>
+          <ThemedText type="linkPrimary">🗺️ Get directions</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             Meet at the visitor centre. Bring water and comfy shoes, we&apos;ll grab breakfast
             after.
