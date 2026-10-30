@@ -10,6 +10,7 @@ import { ProfileChecklist } from '@/components/profile-checklist';
 import { AvatarRing } from '@/components/avatar-ring';
 import { Pill } from '@/components/pill';
 import { KudosPills } from '@/components/kudos-pills';
+import { MySocials } from '@/components/my-socials';
 import { ProfileCover } from '@/components/profile-cover';
 import { PrimaryButton } from '@/components/primary-button';
 import { RankCard } from '@/components/rank-card';
@@ -23,12 +24,14 @@ import { displayName, type Profile } from '@/lib/profiles';
 import {
   daysSince,
   fetchCrewFriendships,
+  fetchFirstTimers,
   fetchUserStats,
   friendshipLevel,
   type CrewFriendship,
   type UserStats,
 } from '@/lib/ranks';
 import { shareProfile } from '@/lib/share';
+import { fetchSocials, type Socials } from '@/lib/socials';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -40,16 +43,22 @@ export default function ProfileScreen() {
   const [crew, setCrew] = useState<Profile[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [friendships, setFriendships] = useState<Map<string, CrewFriendship>>(new Map());
+  const [socials, setSocials] = useState<Socials | null>(null);
+  const [firstTimer, setFirstTimer] = useState(false);
 
   const load = useCallback(async () => {
     const userId = session?.user.id ?? '';
-    const [connections, myStats, crewFriendships] = await Promise.all([
+    const [connections, myStats, crewFriendships, mySocials, newcomers] = await Promise.all([
       supabase.rpc('my_connections'),
       fetchUserStats(userId),
       fetchCrewFriendships(),
+      fetchSocials(userId),
+      fetchFirstTimers([userId]),
     ]);
+    setFirstTimer(newcomers.has(userId));
     setStats(myStats);
     setFriendships(crewFriendships);
+    setSocials(mySocials);
     setCrew((connections.data as Profile[]) ?? []);
   }, [session?.user.id]);
 
@@ -80,6 +89,7 @@ export default function ProfileScreen() {
                 .filter(Boolean)
                 .join(' · ')}
             </ThemedText>
+            {firstTimer && <Pill color="#22C55E" label="🌱 First-timer" />}
           </View>
 
           <Availability profile={profile} />
@@ -104,6 +114,8 @@ export default function ProfileScreen() {
           {profile && <ProfileChecklist profile={profile} />}
 
           <StatusPicker />
+
+          <MySocials socials={socials} />
 
           {stats && <RankCard stats={stats} />}
 

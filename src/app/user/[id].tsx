@@ -10,6 +10,7 @@ import { KudosPills } from '@/components/kudos-pills';
 import { ProfileCover } from '@/components/profile-cover';
 import { PrimaryButton } from '@/components/primary-button';
 import { RankCard } from '@/components/rank-card';
+import { SocialIcon } from '@/components/social-icon';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -18,9 +19,9 @@ import { confirmAction } from '@/lib/confirm';
 import { formatCountry } from '@/lib/countries';
 import { canMessage } from '@/lib/dms';
 import { displayName, type Profile } from '@/lib/profiles';
-import { fetchUserStats, type UserStats } from '@/lib/ranks';
+import { fetchFirstTimers, fetchUserStats, type UserStats } from '@/lib/ranks';
 import { shareProfile } from '@/lib/share';
-import { fetchSocials, type Socials } from '@/lib/socials';
+import { fetchSocials, SOCIAL_KEYS, SOCIALS, type Socials } from '@/lib/socials';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -37,11 +38,12 @@ export default function UserScreen() {
   const [inCrew, setInCrew] = useState(false);
   // Only comes back if we're in each other's crew.
   const [socials, setSocials] = useState<Socials | null>(null);
+  const [firstTimer, setFirstTimer] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [profile, block, theirStats, crew, theirSocials] = await Promise.all([
+    const [profile, block, theirStats, crew, theirSocials, newcomers] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
       supabase
         .from('blocks')
@@ -51,6 +53,7 @@ export default function UserScreen() {
       fetchUserStats(id),
       myId && myId !== id ? canMessage(myId, id) : Promise.resolve(false),
       myId && myId !== id ? fetchSocials(id) : Promise.resolve(null),
+      fetchFirstTimers([id]),
     ]);
     if (profile.error) setError(profile.error.message);
     setPerson(profile.data as Profile | null);
@@ -58,6 +61,7 @@ export default function UserScreen() {
     setStats(theirStats);
     setInCrew(crew);
     setSocials(theirSocials);
+    setFirstTimer(newcomers.has(id));
   }, [id, myId]);
 
   useFocusEffect(
@@ -121,6 +125,7 @@ export default function UserScreen() {
               .filter(Boolean)
               .join(' · ')}
           </ThemedText>
+          {firstTimer && <Pill color="#22C55E" label="🌱 First-timer" />}
         </View>
 
         <Availability profile={person} />
@@ -161,22 +166,22 @@ export default function UserScreen() {
             {inCrew ? (
               <>
                 <PrimaryButton label="💬 Message" onPress={() => router.push(`/dm/${id}`)} />
-                {socials?.instagram && (
-                  <PrimaryButton
-                    label={`📸 Instagram: ${socials.instagram}`}
-                    variant="secondary"
-                    onPress={() =>
-                      Linking.openURL(`https://www.instagram.com/${socials.instagram}`)
-                    }
-                  />
-                )}
-                {socials?.telegram && (
-                  <PrimaryButton
-                    label={`✈️ Telegram: ${socials.telegram}`}
-                    variant="secondary"
-                    onPress={() => Linking.openURL(`https://t.me/${socials.telegram}`)}
-                  />
-                )}
+                {SOCIAL_KEYS.map((key) => {
+                  const handle = socials?.[key];
+                  if (!handle) return null;
+                  return (
+                    <PrimaryButton
+                      key={key}
+                      // Spotify ids are usually random letters, so don't show them.
+                      label={
+                        key === 'spotify' ? SOCIALS[key].label : `${SOCIALS[key].label}: ${handle}`
+                      }
+                      variant="secondary"
+                      icon={<SocialIcon name={key} />}
+                      onPress={() => Linking.openURL(SOCIALS[key].url(handle))}
+                    />
+                  );
+                })}
               </>
             ) : (
               myId !== id && (

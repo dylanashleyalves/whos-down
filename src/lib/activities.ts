@@ -64,6 +64,24 @@ export async function fetchActivity(id: string) {
   return data as unknown as ActivityWithPeople;
 }
 
+// "How to find us". The database only returns it to people who are going.
+export async function fetchMeetupNote(activityId: string) {
+  const { data, error } = await supabase
+    .from('activity_meetup_notes')
+    .select('note')
+    .eq('activity_id', activityId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.note as string | undefined) ?? null;
+}
+
+export async function saveMeetupNote(activityId: string, note: string) {
+  const { error } = note
+    ? await supabase.from('activity_meetup_notes').upsert({ activity_id: activityId, note })
+    : await supabase.from('activity_meetup_notes').delete().eq('activity_id', activityId);
+  if (error) throw error;
+}
+
 // Each person can post one new activity per day (also enforced in the database).
 export const POST_LIMIT_MS = 24 * 60 * 60 * 1000;
 

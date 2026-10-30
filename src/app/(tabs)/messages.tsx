@@ -93,7 +93,12 @@ function ThreadRow({ thread }: { thread: DmThread }) {
     <Pressable
       onPress={() => router.push(`/dm/${thread.other_id}`)}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-      <Avatar profile={thread} size={48} />
+      <Pressable
+        onPress={() => router.push(`/user/${thread.other_id}`)}
+        accessibilityRole="button"
+        accessibilityLabel={`View ${displayName(thread)}'s profile`}>
+        <Avatar profile={thread} size={48} />
+      </Pressable>
       <View style={styles.text}>
         <View style={styles.rowTop}>
           <ThemedText type="smallBold" style={styles.grow} numberOfLines={1}>

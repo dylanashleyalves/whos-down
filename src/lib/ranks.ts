@@ -67,6 +67,13 @@ export async function fetchXp(userIds: string[]) {
   return xp;
 }
 
+// Which of these people haven't been to a meetup yet, for the first-timer badge.
+export async function fetchFirstTimers(userIds: string[]) {
+  if (userIds.length === 0) return new Set<string>();
+  const { data } = await supabase.rpc('first_timers', { user_ids: [...new Set(userIds)] });
+  return new Set((data ?? []) as string[]);
+}
+
 export type CrewFriendship = { times_together: number; last_together: string | null };
 
 // How often and how recently you've met each crew member, keyed by their id.

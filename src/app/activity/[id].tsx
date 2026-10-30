@@ -16,6 +16,7 @@ import {
   Audiences,
   Categories,
   fetchActivity,
+  fetchMeetupNote,
   formatDay,
   formatTime,
   directionsUrl,
@@ -27,6 +28,7 @@ import { confirmAction } from '@/lib/confirm';
 import { findCountry } from '@/lib/countries';
 import { canGiveKudos, fetchMyKudos, KUDOS, setKudo, type Kudo } from '@/lib/kudos';
 import { displayName, type ProfileSummary } from '@/lib/profiles';
+import { fetchFirstTimers } from '@/lib/ranks';
 import { shareActivity } from '@/lib/share';
 import { showToast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
@@ -43,6 +45,9 @@ export default function ActivityScreen() {
   // Tags I've given each person here, and whose tag picker is open.
   const [kudos, setKudos] = useState<Map<string, Set<Kudo>>>(new Map());
   const [kudosFor, setKudosFor] = useState<string | null>(null);
+  // Only comes back if you're going.
+  const [meetupNote, setMeetupNote] = useState<string | null>(null);
+  const [firstTimers, setFirstTimers] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +56,13 @@ export default function ActivityScreen() {
       const loaded = await fetchActivity(id);
       setActivity(loaded);
       setError(null);
+
+      const [note, newcomers] = await Promise.all([
+        fetchMeetupNote(loaded.id).catch(() => null),
+        fetchFirstTimers([loaded.host_id, ...loaded.members.map((m) => m.user_id)]),
+      ]);
+      setMeetupNote(note);
+      setFirstTimers(newcomers);
 
       const others = [loaded.host_id, ...loaded.members.map((m) => m.user_id)].filter(
         (userId) => userId !== myId
@@ -178,6 +190,7 @@ export default function ActivityScreen() {
             <ThemedText>📍 {activity.location}</ThemedText>
             <ThemedText type="linkPrimary">🗺️ Get directions</ThemedText>
           </Pressable>
+          {meetupNote && <ThemedText>👋 How to find us: {meetupNote}</ThemedText>}
           {activity.details && (
             <ThemedText type="small" themeColor="textSecondary">
               {activity.details}
@@ -187,6 +200,7 @@ export default function ActivityScreen() {
             <Avatar profile={activity.host} size={28} />
             <ThemedText type="small">
               Hosted by {isHost ? 'you' : displayName(activity.host)}
+              {firstTimers.has(activity.host_id) && ' · 🌱 First-timer'}
             </ThemedText>
           </View>
         </ThemedView>
@@ -273,9 +287,11 @@ export default function ActivityScreen() {
                         {displayName(profile)}
                         {userId === myId ? ' (you)' : ''}
                       </ThemedText>
-                      {hosting && (
+                      {(hosting || firstTimers.has(userId)) && (
                         <ThemedText type="small" themeColor="textSecondary">
-                          Host
+                          {[hosting && 'Host', firstTimers.has(userId) && '🌱 First-timer']
+                            .filter(Boolean)
+                            .join(' · ')}
                         </ThemedText>
                       )}
                     </View>

@@ -26,11 +26,20 @@ type ActivityCardProps = {
   unread?: number;
   // The host's recent XP, to show their rank badge.
   hostXp?: number;
+  // Shown instead of the rank badge when this is the host's first meetup.
+  hostFirstTimer?: boolean;
   // Defaults to opening the activity.
   onPress?: () => void;
 };
 
-export function ActivityCard({ activity, myId, unread = 0, hostXp, onPress }: ActivityCardProps) {
+export function ActivityCard({
+  activity,
+  myId,
+  unread = 0,
+  hostXp,
+  hostFirstTimer,
+  onPress,
+}: ActivityCardProps) {
   const startsAt = new Date(activity.starts_at);
   const category = Categories[activity.category];
   const left = spotsLeft(activity);
@@ -110,7 +119,9 @@ export function ActivityCard({ activity, myId, unread = 0, hostXp, onPress }: Ac
             <Avatar profile={activity.host} size={24} />
             <ThemedText type="small" themeColor="textSecondary">
               {displayName(activity.host)}
-              {hostXp !== undefined && ` · ${rankFor(hostXp).emoji} ${rankFor(hostXp).name}`}
+              {hostFirstTimer
+                ? ' · 🌱 First-timer'
+                : hostXp !== undefined && ` · ${rankFor(hostXp).emoji} ${rankFor(hostXp).name}`}
             </ThemedText>
           </View>
           <Pill color={status.color} label={status.label} bold />

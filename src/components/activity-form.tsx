@@ -19,9 +19,11 @@ import { useTheme } from '@/hooks/use-theme';
 import {
   Audiences,
   Categories,
+  fetchMeetupNote,
   fetchNextPostTime,
   formatDay,
   formatTime,
+  saveMeetupNote,
   type ActivityWithPeople,
   type Audience,
   type Category,
@@ -72,18 +74,54 @@ const QUICK_STARTS: { title: string; category: Category; spots: number; details?
     spots: 4,
     details: 'All levels welcome.',
   },
-  { title: '🏋️ Gym session, looking for a buddy', category: 'gym', spots: 1 },
-  { title: '☕ Coffee and a chat', category: 'hangout', spots: 2 },
-  { title: '🍜 Supper run, who’s hungry?', category: 'food', spots: 3 },
-  { title: '🎮 Gaming night, need a squad', category: 'gaming', spots: 3 },
+  {
+    title: '🏋️ Gym session, looking for a buddy',
+    category: 'gym',
+    spots: 1,
+    details: 'Any level, no pressure.',
+  },
+  {
+    title: '☕ Coffee and a chat',
+    category: 'hangout',
+    spots: 2,
+    details: 'No plan, just a chat. First-timers welcome.',
+  },
+  {
+    title: '🚶 Easy walk and a chat',
+    category: 'outdoors',
+    spots: 2,
+    details: 'Nice and relaxed. First-timers welcome.',
+  },
+  {
+    title: '🍜 Supper run, who’s hungry?',
+    category: 'food',
+    spots: 3,
+    details: 'Come as you are.',
+  },
+  {
+    title: '🎮 Gaming night, need a squad',
+    category: 'gaming',
+    spots: 3,
+    details: 'All skill levels welcome.',
+  },
   {
     title: '🥾 Easy weekend hike',
     category: 'outdoors',
     spots: 4,
     details: 'Bring water and comfy shoes.',
   },
-  { title: '🏸 Badminton doubles', category: 'sports', spots: 3 },
-  { title: '🎳 Bowling or arcade', category: 'hangout', spots: 4 },
+  {
+    title: '🏸 Badminton doubles',
+    category: 'sports',
+    spots: 3,
+    details: 'Just for fun, all levels welcome.',
+  },
+  {
+    title: '🎳 Bowling or arcade',
+    category: 'hangout',
+    spots: 4,
+    details: 'Being bad at it is half the fun.',
+  },
 ];
 
 type ActivityFormProps = {
@@ -116,6 +154,8 @@ export function ActivityForm({ existing }: ActivityFormProps) {
   );
   const [spots, setSpots] = useState(existing?.spots ?? 3);
   const [details, setDetails] = useState(existing?.details ?? '');
+  // Null until an existing activity's note has loaded, so saving can't wipe it.
+  const [note, setNote] = useState<string | null>(existing ? null : '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Set when the one-post-a-day limit applies to a new post.
@@ -126,6 +166,15 @@ export function ActivityForm({ existing }: ActivityFormProps) {
     if (existing || !userId) return;
     fetchNextPostTime(userId).then(setNextPostAt);
   }, [existing, userId]);
+
+  const existingId = existing?.id;
+  useEffect(() => {
+    if (!existingId) return;
+    fetchMeetupNote(existingId).then(
+      (saved) => setNote((current) => current ?? saved ?? ''),
+      (e) => console.warn('Could not load the meetup note', e)
+    );
+  }, [existingId]);
 
   const slots = useMemo(() => timeSlots(days[dayIndex]), [days, dayIndex]);
   const canPost =
@@ -162,17 +211,34 @@ export function ActivityForm({ existing }: ActivityFormProps) {
       spots,
       details: details.trim() || null,
     };
-    const { error } = existing
-      ? await supabase.from('activities').update(fields).eq('id', existing.id)
-      : await supabase.from('activities').insert(fields);
+    const { data, error } = existing
+      ? await supabase.from('activities').update(fields).eq('id', existing.id).select('id').single()
+      : await supabase.from('activities').insert(fields).select('id').single();
+
+    if (error) {
+      setBusy(false);
+      setError(error.message);
+      return;
+    }
+
+    // The activity is saved by now, so a note that fails shouldn't stop them moving on.
+    let noteSaved = true;
+    if (note !== null && (existing || note.trim())) {
+      try {
+        await saveMeetupNote(data.id as string, note.trim());
+      } catch (e) {
+        console.warn('Could not save the meetup note', e);
+        noteSaved = false;
+      }
+    }
 
     setBusy(false);
-    if (error) {
-      setError(error.message);
+    if (!noteSaved) {
+      showToast('Saved, but "How to find us" didn’t. Try Edit activity.');
     } else {
       showToast(existing ? 'Changes saved ✓' : "Posted! 🎉 We'll let you know when people join");
-      router.back();
     }
+    router.back();
   }
 
   const inputStyle = [
@@ -336,6 +402,20 @@ export function ActivityForm({ existing }: ActivityFormProps) {
               value={details}
               onChangeText={setDetails}
             />
+          </Field>
+
+          <Field label="How to find us (optional)">
+            <TextInput
+              style={inputStyle}
+              placeholder="Blue shirt, by the main entrance"
+              placeholderTextColor={theme.textSecondary}
+              maxLength={120}
+              value={note ?? ''}
+              onChangeText={setNote}
+            />
+            <ThemedText type="small" themeColor="textSecondary">
+              🔒 Only people who join can see this.
+            </ThemedText>
           </Field>
 
           {error && (

@@ -46,7 +46,7 @@ const NOTIFICATION_TYPES: { key: NotifySwitch; label: string; detail: string }[]
   {
     key: 'notify_activities',
     label: '✨ New activities',
-    detail: 'Posts near you that match your interests, up to 3 a day',
+    detail: 'New posts in your country, up to 3 a day',
   },
   { key: 'notify_kudos', label: '👏 Kudos', detail: 'When someone gives you kudos after a meetup' },
   {

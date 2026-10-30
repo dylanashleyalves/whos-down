@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,15 +12,26 @@ type ButtonProps = {
   // Looks faded but still tappable, so the screen can explain what's missing.
   dimmed?: boolean;
   variant?: 'primary' | 'secondary';
+  icon?: ReactNode;
 };
 
-export function PrimaryButton({ label, onPress, busy, dimmed, variant = 'primary' }: ButtonProps) {
+export function PrimaryButton({
+  label,
+  onPress,
+  busy,
+  dimmed,
+  variant = 'primary',
+  icon,
+}: ButtonProps) {
   const content = busy ? (
     <ActivityIndicator color={variant === 'primary' ? '#ffffff' : undefined} />
   ) : (
-    <ThemedText type="smallBold" style={variant === 'primary' && styles.primaryLabel}>
-      {label}
-    </ThemedText>
+    <View style={styles.labelRow}>
+      {icon}
+      <ThemedText type="smallBold" style={variant === 'primary' && styles.primaryLabel}>
+        {label}
+      </ThemedText>
+    </View>
   );
 
   return (
@@ -43,6 +55,11 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
     borderRadius: Spacing.three,
     alignItems: 'center',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   primary: {
     backgroundColor: Brand.blue,

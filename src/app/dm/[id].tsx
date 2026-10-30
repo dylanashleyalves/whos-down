@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { PersonHeaderTitle } from '@/components/person-header-title';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -107,7 +108,14 @@ export default function DirectMessageScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: other ? displayName(other) : 'Message' }} />
+      <Stack.Screen
+        options={{
+          title: other ? displayName(other) : 'Message',
+          headerTitle: () => (
+            <PersonHeaderTitle person={other} onPress={() => router.push(`/user/${otherId}`)} />
+          ),
+        }}
+      />
       <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}

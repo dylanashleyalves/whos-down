@@ -34,6 +34,8 @@ let deliveryErrors: string[] = [];
 
 // At most this many "new activity" alerts per person a day.
 const ACTIVITY_ALERTS_PER_DAY = 3;
+// Posts outside your interests stop sooner, so there's always room for one that matches.
+const OTHER_ACTIVITY_ALERTS_PER_DAY = 2;
 
 function preview(text: string) {
   return text.length > PREVIEW_LENGTH ? `${text.slice(0, PREVIEW_LENGTH - 1)}…` : text;
@@ -224,10 +226,12 @@ async function onActivity(record: {
   const now = new Date().toISOString();
   const { data: people } = await supabase
     .from('profiles')
-    .select('id, status, status_until')
+    .select('id, status, status_until, interests')
     .eq('country', record.country)
-    .contains('interests', [record.category])
     .neq('id', record.host_id);
+  const interested = new Set(
+    (people ?? []).filter((p) => p.interests?.includes(record.category)).map((p) => p.id as string)
+  );
   let ids = (people ?? [])
     .filter((p) => !(p.status === 'busy' && p.status_until && p.status_until > now))
     .map((p) => p.id as string);
@@ -251,7 +255,11 @@ async function onActivity(record: {
     .gte('sent_at', new Date(Date.now() - 24 * 60 * MINUTE).toISOString());
   const counts = new Map<string, number>();
   for (const row of today ?? []) counts.set(row.user_id, (counts.get(row.user_id) ?? 0) + 1);
-  ids = ids.filter((id) => (counts.get(id) ?? 0) < ACTIVITY_ALERTS_PER_DAY);
+  ids = ids.filter(
+    (id) =>
+      (counts.get(id) ?? 0) <
+      (interested.has(id) ? ACTIVITY_ALERTS_PER_DAY : OTHER_ACTIVITY_ALERTS_PER_DAY)
+  );
 
   const host = await nameOf(record.host_id);
   const recipients = await firstTime(ids, 'new_activity', record.id);

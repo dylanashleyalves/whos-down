@@ -1,13 +1,13 @@
 // Spots social handles, links and phone numbers in bios. The database runs the same check
-// when a bio is saved: keep in step with supabase/migrations/0016_socials_and_bio_check.sql.
+// when a bio is saved: keep in step with supabase/migrations/0017_more_socials.sql.
 const PLATFORMS =
-  'ig|insta|instagram|snap|snapchat|telegram|tele|tg|tiktok|whatsapp|wa|discord|fb|facebook|twitter';
+  'ig|insta|instagram|snap|snapchat|telegram|tele|tg|tiktok|whatsapp|wa|discord|fb|facebook|twitter|spotify';
 
 const CONTACT_PATTERNS = [
   // @name, including email addresses
   /@[a-z0-9_.]{2,}/,
   // Links
-  /\b(instagram\.com|t\.me|telegram\.me|wa\.me|tiktok\.com|snapchat\.com|discord\.gg|discord\.com|facebook\.com|fb\.com|twitter\.com|x\.com)\b/,
+  /\b(instagram\.com|t\.me|telegram\.me|wa\.me|tiktok\.com|snapchat\.com|discord\.gg|discord\.com|facebook\.com|fb\.com|twitter\.com|x\.com|spotify\.com|spotify\.link)\b/,
   // "ig: name", "tele - name", "snap id"
   String.raw`\b(${PLATFORMS})\b\s*(:|=|@|-\s|id\b|handle\b)`,
   // "my ig is name"

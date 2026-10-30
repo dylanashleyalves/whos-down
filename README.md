@@ -113,7 +113,7 @@ supabase/
    npm install
    ```
 
-2. **Set up the database.** In your Supabase project, open **SQL Editor** and run each file in [`supabase/migrations`](supabase/migrations) in order (`0001` → `0016`).
+2. **Set up the database.** In your Supabase project, open **SQL Editor** and run each file in [`supabase/migrations`](supabase/migrations) in order (`0001` → `0018`).
 
 3. **Add your keys.** Copy `.env.example` to `.env.local` and fill in your Project URL and anon key from **Project Settings → API**.
 

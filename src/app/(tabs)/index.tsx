@@ -30,7 +30,7 @@ import {
   type Category,
 } from '@/lib/activities';
 import { fetchUnreadCounts } from '@/lib/chat';
-import { fetchXp } from '@/lib/ranks';
+import { fetchFirstTimers, fetchXp } from '@/lib/ranks';
 import { formatCountry } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -113,6 +113,7 @@ export default function FeedScreen() {
   const totalUnread = [...unread.values()].reduce((sum, n) => sum + n, 0);
   // Hosts' recent XP, for the rank badges on cards.
   const [hostXp, setHostXp] = useState<Map<string, number>>(new Map());
+  const [firstTimers, setFirstTimers] = useState<Set<string>>(new Set());
 
   // My plans includes past activities, so the When filter is only for Discover.
   const timeFilter = view === 'discover' ? when : null;
@@ -128,7 +129,10 @@ export default function FeedScreen() {
       ]);
       setActivities(result);
       setUnread(counts);
-      setHostXp(await fetchXp(result.map((a) => a.host_id)));
+      const hostIds = result.map((a) => a.host_id);
+      const [xp, newcomers] = await Promise.all([fetchXp(hostIds), fetchFirstTimers(hostIds)]);
+      setHostXp(xp);
+      setFirstTimers(newcomers);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load activities.');
@@ -261,6 +265,7 @@ export default function FeedScreen() {
                   myId={myId}
                   unread={unread.get(item.id) ?? 0}
                   hostXp={hostXp.get(item.host_id)}
+                  hostFirstTimer={firstTimers.has(item.host_id)}
                 />
               </Animated.View>
             )}

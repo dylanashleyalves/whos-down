@@ -15,6 +15,7 @@ import { Chip } from '@/components/chip';
 import { CountryPicker } from '@/components/country-picker';
 import { GuidelinesList } from '@/components/guidelines-list';
 import { PrimaryButton } from '@/components/primary-button';
+import { SocialIcon } from '@/components/social-icon';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -27,9 +28,12 @@ import { ageOn, GENDERS, MIN_AGE, parseBirthdate, uploadAvatar, type Gender } fr
 import {
   cleanHandle,
   fetchSocials,
-  isInstagramHandle,
-  isTelegramHandle,
+  isValidHandle,
   saveSocials,
+  SOCIAL_KEYS,
+  SOCIALS,
+  type SocialKey,
+  type Socials,
 } from '@/lib/socials';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -62,8 +66,7 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [interests, setInterests] = useState<Category[]>(profile?.interests ?? []);
   const [freeTimes, setFreeTimes] = useState<FreeTime[]>(profile?.free_times ?? []);
-  const [instagram, setInstagram] = useState('');
-  const [telegram, setTelegram] = useState('');
+  const [socials, setSocials] = useState<Partial<Record<SocialKey, string>>>({});
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,9 +77,8 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
   // Socials are for your crew, so they're added later from Edit profile, not during setup.
   useEffect(() => {
     if (needsSetup || !userId) return;
-    fetchSocials(userId).then((socials) => {
-      setInstagram(socials?.instagram ?? '');
-      setTelegram(socials?.telegram ?? '');
+    fetchSocials(userId).then((saved) => {
+      if (saved) setSocials(saved as Partial<Record<SocialKey, string>>);
     });
   }, [needsSetup, userId]);
 
@@ -127,15 +129,14 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
       setError(BIO_CONTACT_MESSAGE);
       return;
     }
-    const instagramHandle = cleanHandle(instagram);
-    const telegramHandle = cleanHandle(telegram);
-    if (instagramHandle && !isInstagramHandle(instagramHandle)) {
-      setError('That Instagram username doesn’t look right.');
-      return;
-    }
-    if (telegramHandle && !isTelegramHandle(telegramHandle)) {
-      setError('That Telegram username doesn’t look right. It needs at least 5 characters.');
-      return;
+    const handles = {} as Socials;
+    for (const key of SOCIAL_KEYS) {
+      const handle = cleanHandle(key, socials[key] ?? '');
+      if (handle && !isValidHandle(key, handle)) {
+        setError(SOCIALS[key].problem);
+        return;
+      }
+      handles[key] = handle || null;
     }
 
     const birthdate = parseBirthdate(birthDay, birthMonth, birthYear);
@@ -190,10 +191,7 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
       }
 
       if (!needsSetup) {
-        await saveSocials(userId, {
-          instagram: instagramHandle || null,
-          telegram: telegramHandle || null,
-        });
+        await saveSocials(userId, handles);
       }
 
       await refreshProfile();
@@ -304,26 +302,21 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
 
           {!needsSetup && (
             <Field label="Socials (optional)">
-              <TextInput
-                style={inputStyle}
-                placeholder="Instagram username"
-                placeholderTextColor={theme.textSecondary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={100}
-                value={instagram}
-                onChangeText={setInstagram}
-              />
-              <TextInput
-                style={inputStyle}
-                placeholder="Telegram username"
-                placeholderTextColor={theme.textSecondary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={100}
-                value={telegram}
-                onChangeText={setTelegram}
-              />
+              {SOCIAL_KEYS.map((key) => (
+                <View key={key} style={styles.socialRow}>
+                  <SocialIcon name={key} size={28} />
+                  <TextInput
+                    style={[inputStyle, styles.socialInput]}
+                    placeholder={SOCIALS[key].placeholder}
+                    placeholderTextColor={theme.textSecondary}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    maxLength={200}
+                    value={socials[key] ?? ''}
+                    onChangeText={(text) => setSocials((current) => ({ ...current, [key]: text }))}
+                  />
+                </View>
+              ))}
               <ThemedText type="small" themeColor="textSecondary">
                 🔒 Only your crew can see these: people you&apos;ve met who also tapped &quot;Hang
                 again?&quot;.
@@ -469,6 +462,14 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 const styles = StyleSheet.create({
   bioWarning: {
     color: '#e5484d',
+  },
+  socialRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  socialInput: {
+    flex: 1,
   },
   container: {
     flex: 1,
