@@ -6,38 +6,28 @@ import { Pill } from '@/components/pill';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { currentStatus, FREE_TIMES, STATUSES, statusUntil, type Status } from '@/lib/availability';
+import { currentStatus, STATUSES, statusUntil, type Status } from '@/lib/availability';
 import type { Profile } from '@/lib/profiles';
 import { showToast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
 type AvailabilityProps = {
-  profile: Pick<Profile, 'status' | 'status_until' | 'free_times'> | null;
+  profile: Pick<Profile, 'status' | 'status_until'> | null;
 };
 
-// Someone's status ("🟢 Free now") and when they're usually free. Hidden if neither is set.
+// Someone's status, like "🟢 Free now". Hidden if it isn't set.
 export function Availability({ profile }: AvailabilityProps) {
   const status = currentStatus(profile);
-  const freeTimes = profile?.free_times ?? [];
-  if (!status && freeTimes.length === 0) return null;
+  if (!status) return null;
 
   return (
-    <View style={styles.container}>
-      {status && (
-        <Pill
-          size="medium"
-          bold
-          color={STATUSES[status].color}
-          label={`${STATUSES[status].emoji} ${STATUSES[status].label}`}
-        />
-      )}
-      {freeTimes.length > 0 && (
-        <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-          Usually free: {freeTimes.map((key) => FREE_TIMES[key].toLowerCase()).join(', ')}
-        </ThemedText>
-      )}
-    </View>
+    <Pill
+      size="medium"
+      bold
+      color={STATUSES[status].color}
+      label={`${STATUSES[status].emoji} ${STATUSES[status].label}`}
+    />
   );
 }
 
@@ -63,7 +53,7 @@ export function StatusPicker() {
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold">What&apos;s your status?</ThemedText>
+      <ThemedText type="smallBold">Your status</ThemedText>
       <View style={styles.chips}>
         {(Object.keys(STATUSES) as Status[]).map((key) => (
           <Chip
@@ -75,21 +65,11 @@ export function StatusPicker() {
           />
         ))}
       </View>
-      <ThemedText type="small" themeColor="textSecondary">
-        Shows on your profile and clears itself. Set when you&apos;re usually free in Edit profile.
-      </ThemedText>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  center: {
-    textAlign: 'center',
-  },
   card: {
     padding: Spacing.three,
     borderRadius: Spacing.three,

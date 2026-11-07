@@ -7,14 +7,14 @@ import { AvatarRing } from '@/components/avatar-ring';
 import { Pill } from '@/components/pill';
 import { Availability } from '@/components/availability';
 import { KudosPills } from '@/components/kudos-pills';
+import { ProfileAbout } from '@/components/profile-about';
 import { ProfileCover } from '@/components/profile-cover';
 import { PrimaryButton } from '@/components/primary-button';
 import { RankCard } from '@/components/rank-card';
 import { SocialIcon } from '@/components/social-icon';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
-import { Categories } from '@/lib/activities';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { confirmAction } from '@/lib/confirm';
 import { formatCountry } from '@/lib/countries';
 import { canMessage } from '@/lib/dms';
@@ -125,35 +125,11 @@ export default function UserScreen() {
               .filter(Boolean)
               .join(' · ')}
           </ThemedText>
-          {firstTimer && <Pill color="#22C55E" label="🌱 First-timer" />}
-        </View>
-
-        <Availability profile={person} />
-
-        {person.bio && <ThemedText style={styles.center}>{person.bio}</ThemedText>}
-
-        {person.interests.length > 0 && (
-          <View style={styles.interests}>
-            {person.interests.map((key) => (
-              <Pill
-                key={key}
-                size="medium"
-                color={Categories[key]?.color ?? Brand.blue}
-                label={`${Categories[key]?.emoji ?? ''} ${Categories[key]?.label ?? key}`}
-              />
-            ))}
+          <View style={styles.badges}>
+            {firstTimer && <Pill color="#22C55E" label="🌱 First-timer" />}
+            <Availability profile={person} />
           </View>
-        )}
-
-        <KudosPills userId={person.id} />
-
-        {stats && <RankCard stats={stats} />}
-
-        <PrimaryButton
-          label="📤 Share profile"
-          variant="secondary"
-          onPress={() => shareProfile(person, stats?.xp_recent ?? null, isMe)}
-        />
+        </View>
 
         {error && (
           <ThemedText type="small" style={styles.error}>
@@ -194,17 +170,38 @@ export default function UserScreen() {
                 </ThemedView>
               )
             )}
-            <PrimaryButton
-              label="Report"
-              variant="secondary"
-              onPress={() => router.push({ pathname: '/report', params: { userId: id } })}
-            />
-            <PrimaryButton
-              label={blocked ? 'Unblock' : 'Block'}
-              variant="secondary"
-              busy={busy}
-              onPress={toggleBlock}
-            />
+          </View>
+        )}
+
+        <ProfileAbout profile={person} />
+
+        <KudosPills userId={person.id} />
+
+        {stats && <RankCard stats={stats} />}
+
+        <PrimaryButton
+          label="📤 Share profile"
+          variant="secondary"
+          onPress={() => shareProfile(person, stats?.xp_recent ?? null, isMe)}
+        />
+
+        {!isMe && (
+          <View style={styles.safetyRow}>
+            <View style={styles.grow}>
+              <PrimaryButton
+                label="Report"
+                variant="secondary"
+                onPress={() => router.push({ pathname: '/report', params: { userId: id } })}
+              />
+            </View>
+            <View style={styles.grow}>
+              <PrimaryButton
+                label={blocked ? 'Unblock' : 'Block'}
+                variant="secondary"
+                busy={busy}
+                onPress={toggleBlock}
+              />
+            </View>
           </View>
         )}
       </ScrollView>
@@ -231,21 +228,20 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
+    gap: Spacing.one,
+  },
+  badges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
     gap: Spacing.two,
+    marginTop: Spacing.one,
   },
   locked: {
     padding: Spacing.three,
     borderRadius: Spacing.three,
     gap: Spacing.one,
-  },
-  center: {
-    textAlign: 'center',
-  },
-  interests: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: Spacing.two,
   },
   error: {
     color: '#e5484d',
@@ -253,6 +249,12 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: Spacing.two,
-    marginTop: Spacing.four,
+  },
+  safetyRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  grow: {
+    flex: 1,
   },
 });

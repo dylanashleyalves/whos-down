@@ -16,6 +16,7 @@ import { CountryPicker } from '@/components/country-picker';
 import { GuidelinesList } from '@/components/guidelines-list';
 import { PrimaryButton } from '@/components/primary-button';
 import { SocialIcon } from '@/components/social-icon';
+import { SpotifyField, SpotifyHelp } from '@/components/spotify-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -305,18 +306,29 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
               {SOCIAL_KEYS.map((key) => (
                 <View key={key} style={styles.socialRow}>
                   <SocialIcon name={key} size={28} />
-                  <TextInput
-                    style={[inputStyle, styles.socialInput]}
-                    placeholder={SOCIALS[key].placeholder}
-                    placeholderTextColor={theme.textSecondary}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    maxLength={200}
-                    value={socials[key] ?? ''}
-                    onChangeText={(text) => setSocials((current) => ({ ...current, [key]: text }))}
-                  />
+                  {key === 'spotify' ? (
+                    <SpotifyField
+                      value={socials.spotify ?? ''}
+                      inputStyle={[inputStyle, styles.socialInput]}
+                      onChange={(text) => setSocials((current) => ({ ...current, spotify: text }))}
+                    />
+                  ) : (
+                    <TextInput
+                      style={[inputStyle, styles.socialInput]}
+                      placeholder={SOCIALS[key].placeholder}
+                      placeholderTextColor={theme.textSecondary}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      maxLength={200}
+                      value={socials[key] ?? ''}
+                      onChangeText={(text) =>
+                        setSocials((current) => ({ ...current, [key]: text }))
+                      }
+                    />
+                  )}
                 </View>
               ))}
+              {!socials.spotify && <SpotifyHelp />}
               <ThemedText type="small" themeColor="textSecondary">
                 🔒 Only your crew can see these: people you&apos;ve met who also tapped &quot;Hang
                 again?&quot;.

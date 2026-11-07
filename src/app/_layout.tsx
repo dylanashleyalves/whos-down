@@ -54,7 +54,7 @@ function RootNavigator() {
           />
           <Stack.Screen name="activity/[id]" options={{ headerShown: true, title: 'Activity' }} />
           <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: 'Group chat' }} />
-          <Stack.Screen name="dm/[id]" options={{ headerShown: true, title: 'Message' }} />
+          <Stack.Screen name="dm/[id]" />
           <Stack.Screen
             name="edit-profile"
             options={{ presentation: 'modal', headerShown: true, title: 'Edit profile' }}
@@ -79,12 +79,14 @@ function RootNavigator() {
           name="guidelines"
           options={{ headerShown: true, title: 'Community guidelines' }}
         />
+        <Stack.Screen name="help" options={{ headerShown: true, title: 'Setup guide' }} />
         {/* Sample-data screens for marketing screenshots. Never included in real builds. */}
         <Stack.Protected guard={__DEV__}>
           <Stack.Screen name="demo/feed" />
           <Stack.Screen name="demo/activity" options={{ headerShown: true, title: 'Activity' }} />
           <Stack.Screen name="demo/chat" options={{ headerShown: true, title: 'Group chat' }} />
           <Stack.Screen name="demo/profile" />
+          <Stack.Screen name="demo/dm" />
           <Stack.Screen name="demo/intro" />
           <Stack.Screen name="demo/onboarding" />
           <Stack.Screen name="demo/settings" options={{ headerShown: true, title: 'Settings' }} />

@@ -262,6 +262,12 @@ export default function SettingsScreen() {
             </ThemedText>
             <Chevron />
           </Row>
+          <Row onPress={() => router.push('/help')}>
+            <ThemedText type="small" style={styles.grow}>
+              📖 Setup guide
+            </ThemedText>
+            <Chevron />
+          </Row>
           <View style={styles.padded}>
             <FeedbackBox />
           </View>

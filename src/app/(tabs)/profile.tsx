@@ -3,9 +3,10 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Availability, StatusPicker } from '@/components/availability';
+import { StatusPicker } from '@/components/availability';
 import { Avatar } from '@/components/avatar';
 import { EmptyState } from '@/components/empty-state';
+import { ProfileAbout } from '@/components/profile-about';
 import { ProfileChecklist } from '@/components/profile-checklist';
 import { AvatarRing } from '@/components/avatar-ring';
 import { Pill } from '@/components/pill';
@@ -16,8 +17,7 @@ import { PrimaryButton } from '@/components/primary-button';
 import { RankCard } from '@/components/rank-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, Brand, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
-import { Categories } from '@/lib/activities';
+import { BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { currentStatus, STATUSES } from '@/lib/availability';
 import { formatCountry } from '@/lib/countries';
 import { displayName, type Profile } from '@/lib/profiles';
@@ -92,47 +92,32 @@ export default function ProfileScreen() {
             {firstTimer && <Pill color="#22C55E" label="🌱 First-timer" />}
           </View>
 
-          <Availability profile={profile} />
-
-          {profile?.bio && <ThemedText style={styles.bio}>{profile.bio}</ThemedText>}
-
-          {profile && profile.interests.length > 0 && (
-            <View style={styles.interests}>
-              {profile.interests.map((key) => (
-                <Pill
-                  key={key}
-                  size="medium"
-                  color={Categories[key]?.color ?? Brand.blue}
-                  label={`${Categories[key]?.emoji ?? ''} ${Categories[key]?.label ?? key}`}
-                />
-              ))}
+          <View style={styles.actions}>
+            <View style={styles.grow}>
+              <PrimaryButton
+                label="Edit profile"
+                variant="secondary"
+                onPress={() => router.push('/edit-profile')}
+              />
             </View>
-          )}
-
-          {session && <KudosPills userId={session.user.id} />}
+            {profile && (
+              <View style={styles.grow}>
+                <PrimaryButton
+                  label="📤 Share"
+                  variant="secondary"
+                  onPress={() => shareProfile(profile, stats?.xp_recent ?? null, true)}
+                />
+              </View>
+            )}
+          </View>
 
           {profile && <ProfileChecklist profile={profile} />}
 
           <StatusPicker />
 
-          <MySocials socials={socials} />
+          <ProfileAbout profile={profile} />
 
-          {stats && <RankCard stats={stats} />}
-
-          {profile && (
-            <PrimaryButton
-              label="📤 Share my profile"
-              onPress={() => shareProfile(profile, stats?.xp_recent ?? null, true)}
-            />
-          )}
-
-          <PrimaryButton
-            label="Edit profile"
-            variant="secondary"
-            onPress={() => router.push('/edit-profile')}
-          />
-
-          {isAdmin && <PrimaryButton label="🛡️ Moderation" onPress={() => router.push('/admin')} />}
+          {session && <KudosPills userId={session.user.id} />}
 
           <ThemedText type="smallBold">Your crew ({crew.length})</ThemedText>
           {crew.length === 0 ? (
@@ -177,6 +162,12 @@ export default function ProfileScreen() {
               );
             })
           )}
+
+          {stats && <RankCard stats={stats} />}
+
+          <MySocials socials={socials} />
+
+          {isAdmin && <PrimaryButton label="🛡️ Moderation" onPress={() => router.push('/admin')} />}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -201,15 +192,10 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
-  bio: {
-    textAlign: 'center',
-  },
-  interests: {
+  actions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
     gap: Spacing.two,
   },
   friend: {

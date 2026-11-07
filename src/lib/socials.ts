@@ -40,12 +40,29 @@ export const SOCIALS: Record<
     label: 'Spotify',
     placeholder: 'Spotify profile link',
     pattern: /^[A-Za-z0-9._-]{1,64}$/,
-    problem: 'Paste your profile link from Spotify: your profile, then ⋯, Share, Copy link.',
+    problem:
+      'That isn\'t a Spotify profile link. Tap "Where do I find my link?" under the box for the steps.',
     url: (id) => `https://open.spotify.com/user/${id}`,
   },
 };
 
 export const SOCIAL_KEYS = Object.keys(SOCIALS) as SocialKey[];
+
+// Where to find your username or link in each app, for the setup guide.
+export const SOCIAL_STEPS: Record<SocialKey, string[]> = {
+  instagram: ['Open Instagram and go to your profile.', 'Your username is at the top.'],
+  telegram: [
+    'Open Telegram and go to Settings.',
+    "Your username starts with @. If you don't have one, tap Username to make one.",
+  ],
+  tiktok: ['Open TikTok and tap Profile.', 'Your username is under your name and starts with @.'],
+  spotify: [
+    'Open Spotify and tap your picture at the top left.',
+    'Tap View profile.',
+    'Tap ⋯, then Share, then Copy link.',
+    'Come back here and paste it into the Spotify box.',
+  ],
+};
 
 const PROFILE_LINK =
   /^(https?:\/\/)?(www\.)?(instagram\.com|t\.me|telegram\.me|tiktok\.com|open\.spotify\.com(\/intl-[a-z-]+)?\/user)\//i;

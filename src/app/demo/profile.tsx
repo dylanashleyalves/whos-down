@@ -4,16 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { AvatarRing } from '@/components/avatar-ring';
-import { Pill } from '@/components/pill';
-import { Availability, StatusPicker } from '@/components/availability';
+import { StatusPicker } from '@/components/availability';
 import { KudosPills } from '@/components/kudos-pills';
+import { MySocials } from '@/components/my-socials';
+import { ProfileAbout } from '@/components/profile-about';
 import { ProfileCover } from '@/components/profile-cover';
 import { DemoTabBar } from '@/components/demo-tab-bar';
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
-import { Categories } from '@/lib/activities';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { DEMO_CREW, DEMO_ME } from '@/lib/demo-data';
 import { displayName } from '@/lib/profiles';
 
@@ -42,26 +42,24 @@ export default function DemoProfileScreen() {
             <ThemedText themeColor="textSecondary">📍 {me.city} · Singapore</ThemedText>
           </View>
 
-          <Availability
+          <View style={styles.actions}>
+            <View style={styles.grow}>
+              <PrimaryButton label="Edit profile" variant="secondary" onPress={() => {}} />
+            </View>
+            <View style={styles.grow}>
+              <PrimaryButton label="📤 Share" variant="secondary" onPress={() => {}} />
+            </View>
+          </View>
+
+          <StatusPicker />
+
+          <ProfileAbout
             profile={{
-              status: 'free_tonight',
-              status_until: '2099-01-01T00:00:00Z',
+              bio: me.bio,
+              interests: me.interests,
               free_times: ['weekday_evenings', 'weekend_daytime'],
             }}
           />
-
-          <ThemedText style={styles.center}>{me.bio}</ThemedText>
-
-          <View style={styles.interests}>
-            {me.interests.map((key) => (
-              <Pill
-                key={key}
-                size="medium"
-                color={Categories[key]?.color ?? Brand.blue}
-                label={`${Categories[key]?.emoji ?? ''} ${Categories[key]?.label ?? key}`}
-              />
-            ))}
-          </View>
 
           <KudosPills
             kudos={[
@@ -71,10 +69,6 @@ export default function DemoProfileScreen() {
               { tag: 'skilled', total: 2 },
             ]}
           />
-
-          <StatusPicker />
-
-          <PrimaryButton label="Edit profile" variant="secondary" onPress={() => {}} />
 
           <ThemedText type="smallBold">Your crew ({DEMO_CREW.length})</ThemedText>
           {DEMO_CREW.map((friend) => (
@@ -88,6 +82,10 @@ export default function DemoProfileScreen() {
               </View>
             </View>
           ))}
+
+          <MySocials
+            socials={{ instagram: 'dylan_a', telegram: null, tiktok: null, spotify: 'abc' }}
+          />
         </ScrollView>
         <DemoTabBar active="profile" />
       </SafeAreaView>
@@ -111,16 +109,14 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
-  center: {
-    textAlign: 'center',
-  },
-  interests: {
+  actions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
     gap: Spacing.two,
+  },
+  grow: {
+    flex: 1,
   },
   friend: {
     flexDirection: 'row',

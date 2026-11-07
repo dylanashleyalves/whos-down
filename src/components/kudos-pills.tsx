@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Pill } from '@/components/pill';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { fetchKudos, KUDOS, type KudoCount } from '@/lib/kudos';
 
@@ -25,31 +26,30 @@ export function KudosPills({ userId, kudos }: KudosPillsProps) {
   if (shown.length === 0) return null;
 
   return (
-    <View style={styles.container}>
+    <ThemedView type="backgroundElement" style={styles.card}>
       <ThemedText type="smallBold">What people think</ThemedText>
       <View style={styles.pills}>
         {shown.map(({ tag, total }) => (
           <Pill
             key={tag}
-            size="medium"
             color={KUDOS[tag].color}
             label={`${KUDOS[tag].emoji} ${KUDOS[tag].label} ×${total}`}
           />
         ))}
       </View>
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  card: {
+    padding: Spacing.three,
+    borderRadius: Spacing.three,
     gap: Spacing.two,
-    alignItems: 'center',
   },
   pills: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
 });
