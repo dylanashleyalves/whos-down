@@ -184,6 +184,15 @@ export default function SettingsScreen() {
             </View>
             <Chevron label="Edit" />
           </Row>
+          <Row onPress={() => router.push('/arrange-profile')}>
+            <View style={styles.grow}>
+              <ThemedText type="small">↕️ Arrange your profile</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Reorder or hide sections
+              </ThemedText>
+            </View>
+            <Chevron />
+          </Row>
           <ChangePassword />
           <Row onPress={signOut}>
             <ThemedText type="small" style={styles.grow}>

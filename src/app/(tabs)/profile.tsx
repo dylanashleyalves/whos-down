@@ -174,14 +174,6 @@ export default function ProfileScreen() {
             <Fragment key={key}>{sections[key]}</Fragment>
           ))}
 
-          <Pressable
-            onPress={() => router.push('/arrange-profile')}
-            style={({ pressed }) => [styles.arrange, pressed && styles.pressed]}>
-            <ThemedText type="small" themeColor="textSecondary">
-              ↕️ Arrange your profile
-            </ThemedText>
-          </Pressable>
-
           {isAdmin && <PrimaryButton label="🛡️ Moderation" onPress={() => router.push('/admin')} />}
         </ScrollView>
       </SafeAreaView>
@@ -215,10 +207,6 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: Spacing.three,
-  },
-  arrange: {
-    alignSelf: 'center',
-    padding: Spacing.two,
   },
   friend: {
     flexDirection: 'row',
