@@ -44,6 +44,7 @@ export type PrivateProfile = {
   notify_nudges?: boolean;
   notify_activities?: boolean;
   notify_kudos?: boolean;
+  notify_crew_status?: boolean;
   last_seen_at: string | null;
 };
 

@@ -48,6 +48,8 @@ export function StatusPicker() {
     setBusy(false);
     if (error) showToast('Could not update your status');
     else if (next === 'busy') showToast("🔴 Got it. We'll hold new-activity alerts today");
+    else if (next === 'free_now' || next === 'free_tonight')
+      showToast(`${STATUSES[next].emoji} Status set. We'll let your crew know`);
     else if (next) showToast(`${STATUSES[next].emoji} Status set`);
   }
 

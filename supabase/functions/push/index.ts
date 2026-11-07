@@ -1,6 +1,6 @@
 // Sends push notifications through Expo's push service.
 // Called by database triggers (new group message, direct message, someone joining, a new
-// activity, kudos) and
+// activity, kudos, someone in your crew being free) and
 // every 15 minutes by a cron job for reminders. See 0011_push_notifications.sql.
 //
 // Secret (Supabase Dashboard -> Edge Functions -> Secrets):
@@ -13,8 +13,8 @@ const supabase = createClient(
 );
 
 // Which Settings switch each push belongs to (columns on profile_private, see
-// 0013_settings.sql and 0015_availability_and_alerts.sql).
-type Kind = 'messages' | 'joins' | 'reminders' | 'nudges' | 'activities' | 'kudos';
+// 0013_settings.sql, 0015_availability_and_alerts.sql and 0019_crew_status.sql).
+type Kind = 'messages' | 'joins' | 'reminders' | 'nudges' | 'activities' | 'kudos' | 'crew';
 const SWITCH: Record<Kind, string> = {
   messages: 'notify_messages',
   joins: 'notify_joins',
@@ -22,6 +22,7 @@ const SWITCH: Record<Kind, string> = {
   nudges: 'notify_nudges',
   activities: 'notify_activities',
   kudos: 'notify_kudos',
+  crew: 'notify_crew_status',
 };
 
 type Push = { userId: string; kind: Kind; title: string; body: string; href: string };
@@ -96,7 +97,7 @@ async function send(pushes: Push[]) {
     supabase
       .from('profile_private')
       .select(
-        'id, notifications_enabled, notify_messages, notify_joins, notify_reminders, notify_nudges, notify_activities, notify_kudos'
+        'id, notifications_enabled, notify_messages, notify_joins, notify_reminders, notify_nudges, notify_activities, notify_kudos, notify_crew_status'
       )
       .in('id', userIds),
     supabase.from('push_tokens').select('token, user_id').in('user_id', userIds),
@@ -309,6 +310,54 @@ async function onKudos(record: {
   ]);
 }
 
+// Same as STATUSES in src/lib/availability.ts. Only these two tell your crew.
+const CREW_STATUS: Record<string, string> = {
+  free_now: '🟢 {name} is free now',
+  free_tonight: '🌙 {name} is free tonight',
+};
+
+// Someone picked Free now or Free tonight: tell their crew (people who both tapped
+// "Hang again?"), unless they're busy. At most one a day from each person, so changing
+// status back and forth doesn't spam anyone.
+async function onStatus(record: { id: string; status: string }) {
+  const title = CREW_STATUS[record.status];
+  if (!title) return 0;
+  const [picked, pickedBy] = await Promise.all([
+    supabase.from('hang_again').select('to_user').eq('from_user', record.id),
+    supabase.from('hang_again').select('from_user').eq('to_user', record.id),
+  ]);
+  const theyPicked = new Set((picked.data ?? []).map((row) => row.to_user as string));
+  let ids = (pickedBy.data ?? [])
+    .map((row) => row.from_user as string)
+    .filter((id) => theyPicked.has(id));
+  ids = await withoutBlocked(ids, record.id);
+  if (ids.length === 0) return 0;
+
+  const { data: busy } = await supabase
+    .from('profiles')
+    .select('id')
+    .in('id', ids)
+    .eq('status', 'busy')
+    .gt('status_until', new Date().toISOString());
+  const busyIds = new Set((busy ?? []).map((row) => row.id as string));
+  ids = ids.filter((id) => !busyIds.has(id));
+
+  // The date in Singapore (UTC+8), so "a day" ends at local midnight.
+  const day = new Date(Date.now() + 8 * 60 * MINUTE).toISOString().slice(0, 10);
+  const recipients = await firstTime(ids, 'crew_status', `${record.id}:${day}`);
+  if (recipients.length === 0) return 0;
+  const name = await nameOf(record.id);
+  return send(
+    recipients.map((userId) => ({
+      userId,
+      kind: 'crew' as const,
+      title: title.replace('{name}', name),
+      body: 'Down to hang? Send them a message.',
+      href: `/dm/${record.id}`,
+    }))
+  );
+}
+
 async function reminders() {
   const now = Date.now();
   const pushes: Push[] = [];
@@ -400,9 +449,11 @@ Deno.serve(async (request) => {
               ? await onActivity(record)
               : type === 'kudos'
                 ? await onKudos(record)
-                : type === 'reminders'
-                  ? await reminders()
-                  : 0;
+                : type === 'status'
+                  ? await onStatus(record)
+                  : type === 'reminders'
+                    ? await reminders()
+                    : 0;
     const problems = deliveryErrors.length > 0 ? ` (errors: ${deliveryErrors.join('; ')})` : '';
     return new Response(`Sent ${sent}${problems}`, { status: 200 });
   } catch (error) {

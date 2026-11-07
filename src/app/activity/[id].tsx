@@ -219,52 +219,37 @@ export default function ActivityScreen() {
           </ThemedText>
         )}
 
-        {!started && !isParticipant && (
+        <View style={styles.actions}>
+          {!started && !isParticipant && (
+            <View style={styles.grow}>
+              <PrimaryButton
+                label={left === 0 ? 'Full' : "I'm down"}
+                busy={busy}
+                dimmed={left === 0}
+                onPress={() => {
+                  if (left === 0) return;
+                  update(
+                    () => supabase.from('activity_members').insert({ activity_id: activity.id }),
+                    "You're in! 🎉 Say hi in the group chat"
+                  );
+                }}
+              />
+            </View>
+          )}
+          {isParticipant && (
+            <View style={styles.grow}>
+              <PrimaryButton
+                label="💬 Group chat"
+                onPress={() => router.push(`/chat/${activity.id}`)}
+              />
+            </View>
+          )}
           <PrimaryButton
-            label={left === 0 ? 'Full' : "I'm down"}
-            busy={busy}
-            dimmed={left === 0}
-            onPress={() => {
-              if (left === 0) return;
-              update(
-                () => supabase.from('activity_members').insert({ activity_id: activity.id }),
-                "You're in! 🎉 Say hi in the group chat"
-              );
-            }}
-          />
-        )}
-
-        {isParticipant && (
-          <PrimaryButton
-            label="💬 Open group chat"
-            onPress={() => router.push(`/chat/${activity.id}`)}
-          />
-        )}
-
-        <PrimaryButton
-          label={isHost ? '📤 Invite friends' : '📤 Share activity'}
-          variant="secondary"
-          onPress={() => shareActivity(activity)}
-        />
-
-        {!started && isMember && (
-          <PrimaryButton
-            label="Leave"
+            label={isHost ? '📤 Invite' : '📤 Share'}
             variant="secondary"
-            busy={busy}
-            onPress={() =>
-              update(
-                () =>
-                  supabase
-                    .from('activity_members')
-                    .delete()
-                    .eq('activity_id', activity.id)
-                    .eq('user_id', myId ?? ''),
-                'You left this activity'
-              )
-            }
+            onPress={() => shareActivity(activity)}
           />
-        )}
+        </View>
 
         {started && isParticipant && <CheckInCard activity={activity} myId={myId} onSaved={load} />}
 
@@ -371,34 +356,55 @@ export default function ActivityScreen() {
         )}
 
         {isHost ? (
-          <>
+          <View style={styles.actions}>
             {!started && (
-              <PrimaryButton
-                label="Edit activity"
-                variant="secondary"
-                onPress={() => router.push(`/edit-activity/${activity.id}`)}
-              />
+              <View style={styles.grow}>
+                <PrimaryButton
+                  label="Edit"
+                  variant="secondary"
+                  onPress={() => router.push(`/edit-activity/${activity.id}`)}
+                />
+              </View>
             )}
-            <PrimaryButton
-              label="Delete activity"
-              variant="secondary"
-              busy={busy}
-              onPress={remove}
-            />
-          </>
+            <View style={styles.grow}>
+              <PrimaryButton label="Delete" variant="secondary" busy={busy} onPress={remove} />
+            </View>
+          </View>
         ) : (
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: '/report',
-                params: { activityId: activity.id },
-              })
-            }
-            style={styles.reportLink}>
-            <ThemedText type="small" themeColor="textSecondary">
-              Report this activity
-            </ThemedText>
-          </Pressable>
+          <View style={styles.links}>
+            {!started && isMember && (
+              <Pressable
+                disabled={busy}
+                onPress={() =>
+                  update(
+                    () =>
+                      supabase
+                        .from('activity_members')
+                        .delete()
+                        .eq('activity_id', activity.id)
+                        .eq('user_id', myId ?? ''),
+                    'You left this activity'
+                  )
+                }
+                style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Leave activity
+                </ThemedText>
+              </Pressable>
+            )}
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: '/report',
+                  params: { activityId: activity.id },
+                })
+              }
+              style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+              <ThemedText type="small" themeColor="textSecondary">
+                Report this activity
+              </ThemedText>
+            </Pressable>
+          </View>
         )}
       </ScrollView>
     </ThemedView>
@@ -482,8 +488,19 @@ const styles = StyleSheet.create({
   personText: {
     flex: 1,
   },
-  reportLink: {
-    alignSelf: 'center',
+  actions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  grow: {
+    flex: 1,
+  },
+  links: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.three,
+  },
+  link: {
     padding: Spacing.three,
   },
   hangButton: {

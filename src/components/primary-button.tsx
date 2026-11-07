@@ -28,7 +28,11 @@ export function PrimaryButton({
   ) : (
     <View style={styles.labelRow}>
       {icon}
-      <ThemedText type="smallBold" style={variant === 'primary' && styles.primaryLabel}>
+      {/* "simple" stops Android from wrapping a short label that fits, like "📤 Share". */}
+      <ThemedText
+        type="smallBold"
+        textBreakStrategy="simple"
+        style={[styles.label, variant === 'primary' && styles.primaryLabel]}>
         {label}
       </ThemedText>
     </View>
@@ -52,9 +56,12 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: Spacing.three,
+    minHeight: 50,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   labelRow: {
     flexDirection: 'row',
@@ -64,6 +71,9 @@ const styles = StyleSheet.create({
   primary: {
     backgroundColor: Brand.blue,
     backgroundImage: Brand.gradient,
+  },
+  label: {
+    textAlign: 'center',
   },
   primaryLabel: {
     color: '#ffffff',

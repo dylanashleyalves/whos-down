@@ -8,6 +8,7 @@ import { StatusPicker } from '@/components/availability';
 import { KudosPills } from '@/components/kudos-pills';
 import { MySocials } from '@/components/my-socials';
 import { ProfileAbout } from '@/components/profile-about';
+import { ProfileChecklist } from '@/components/profile-checklist';
 import { ProfileCover } from '@/components/profile-cover';
 import { DemoTabBar } from '@/components/demo-tab-bar';
 import { PrimaryButton } from '@/components/primary-button';
@@ -19,8 +20,8 @@ import { displayName } from '@/lib/profiles';
 
 // Dev-only copy of the Profile tab with sample data, for screenshots.
 export default function DemoProfileScreen() {
-  // ?name=…&bio=… previews how a different bio themes the cover.
-  const params = useLocalSearchParams<{ name?: string; bio?: string }>();
+  // ?name=…&bio=… previews how a different bio themes the cover, ?setup=1 the checklist.
+  const params = useLocalSearchParams<{ name?: string; bio?: string; setup?: string }>();
   const me = params.bio
     ? {
         ...DEMO_ME,
@@ -50,6 +51,8 @@ export default function DemoProfileScreen() {
               <PrimaryButton label="📤 Share" variant="secondary" onPress={() => {}} />
             </View>
           </View>
+
+          {params.setup && <ProfileChecklist profile={{ ...me, avatar_url: null, bio: null }} />}
 
           <StatusPicker />
 

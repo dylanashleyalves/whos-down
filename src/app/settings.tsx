@@ -37,6 +37,7 @@ type NotifySwitch =
   | 'notify_joins'
   | 'notify_activities'
   | 'notify_kudos'
+  | 'notify_crew_status'
   | 'notify_reminders'
   | 'notify_nudges';
 
@@ -49,6 +50,11 @@ const NOTIFICATION_TYPES: { key: NotifySwitch; label: string; detail: string }[]
     detail: 'New posts in your country, up to 3 a day',
   },
   { key: 'notify_kudos', label: '👏 Kudos', detail: 'When someone gives you kudos after a meetup' },
+  {
+    key: 'notify_crew_status',
+    label: '🟢 Crew is free',
+    detail: 'When someone in your crew is free now or tonight',
+  },
   {
     key: 'notify_reminders',
     label: '⏰ Reminders',

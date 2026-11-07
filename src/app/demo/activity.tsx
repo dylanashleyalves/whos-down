@@ -51,7 +51,12 @@ export default function DemoActivityScreen() {
           {left} of {activity.spots} spots left
         </ThemedText>
 
-        <PrimaryButton label="I'm down" onPress={() => router.push('/demo/chat')} />
+        <View style={styles.actions}>
+          <View style={styles.grow}>
+            <PrimaryButton label="I'm down" onPress={() => router.push('/demo/chat')} />
+          </View>
+          <PrimaryButton label="📤 Share" variant="secondary" onPress={() => {}} />
+        </View>
 
         <ThemedText type="smallBold">Who&apos;s going ({people.length})</ThemedText>
         <View style={styles.people}>
@@ -112,6 +117,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
     marginTop: Spacing.two,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  grow: {
+    flex: 1,
   },
   people: {
     gap: Spacing.three,
