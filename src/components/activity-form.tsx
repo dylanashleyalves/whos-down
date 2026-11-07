@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { Chip } from '@/components/chip';
+import { LocationField } from '@/components/location-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -327,13 +328,11 @@ export function ActivityForm({ existing }: ActivityFormProps) {
           )}
 
           <Field label="Where?">
-            <TextInput
-              style={inputStyle}
-              placeholder="Park, gym, café, venue or address"
-              placeholderTextColor={theme.textSecondary}
-              maxLength={120}
+            <LocationField
               value={location}
-              onChangeText={setLocation}
+              onChange={setLocation}
+              country={profile?.country ?? null}
+              inputStyle={inputStyle}
             />
             <ThemedText type="small" themeColor="textSecondary">
               Only people in {formatCountry(profile?.country) ?? 'your country'} will see this.
