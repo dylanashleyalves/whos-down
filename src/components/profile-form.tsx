@@ -36,6 +36,7 @@ import {
   type SocialKey,
   type Socials,
 } from '@/lib/socials';
+import { openSitePage } from '@/lib/site';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -151,7 +152,7 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
         return;
       }
       if (!agreed) {
-        setError('Agree to the community guidelines to continue.');
+        setError('Agree to the terms, privacy policy and community guidelines to continue.');
         return;
       }
     }
@@ -396,11 +397,19 @@ export function ProfileForm({ header, submitLabel, onSaved }: ProfileFormProps) 
                 <Checkbox
                   checked={agreed}
                   onToggle={() => setAgreed(!agreed)}
-                  label="I agree to the community guidelines"
+                  label="I agree to the terms, privacy policy and community guidelines"
                 />
-                <Pressable onPress={() => setShowGuidelines(!showGuidelines)}>
+              </View>
+              <View style={styles.legalLinks}>
+                <Pressable onPress={() => openSitePage('terms.html')} hitSlop={6}>
+                  <ThemedText type="linkPrimary">Terms</ThemedText>
+                </Pressable>
+                <Pressable onPress={() => openSitePage('privacy.html')} hitSlop={6}>
+                  <ThemedText type="linkPrimary">Privacy policy</ThemedText>
+                </Pressable>
+                <Pressable onPress={() => setShowGuidelines(!showGuidelines)} hitSlop={6}>
                   <ThemedText type="linkPrimary">
-                    {showGuidelines ? 'Hide' : 'Read them'}
+                    {showGuidelines ? 'Hide guidelines' : 'Guidelines'}
                   </ThemedText>
                 </Pressable>
               </View>
@@ -536,6 +545,11 @@ const styles = StyleSheet.create({
   agreeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: Spacing.three,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.three,
   },
   agreeTap: {

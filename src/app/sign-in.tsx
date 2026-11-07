@@ -16,6 +16,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { signInWithGoogle } from '@/lib/google-auth';
+import { openSitePage } from '@/lib/site';
 import { supabase } from '@/lib/supabase';
 
 type Mode = 'sign-in' | 'sign-up';
@@ -175,6 +176,26 @@ export default function SignInScreen() {
                 : 'Already have an account? Sign in'}
             </ThemedText>
           </Pressable>
+
+          <ThemedText type="small" themeColor="textSecondary" style={styles.legal}>
+            By continuing, you agree to our{' '}
+            <ThemedText
+              type="small"
+              themeColor="text"
+              style={styles.legalLink}
+              onPress={() => openSitePage('terms.html')}>
+              Terms
+            </ThemedText>{' '}
+            and{' '}
+            <ThemedText
+              type="small"
+              themeColor="text"
+              style={styles.legalLink}
+              onPress={() => openSitePage('privacy.html')}>
+              Privacy Policy
+            </ThemedText>
+            .
+          </ThemedText>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>
@@ -251,6 +272,12 @@ const styles = StyleSheet.create({
   },
   switchMode: {
     textAlign: 'center',
+  },
+  legal: {
+    textAlign: 'center',
+  },
+  legalLink: {
+    textDecorationLine: 'underline',
   },
   pressed: {
     opacity: 0.7,

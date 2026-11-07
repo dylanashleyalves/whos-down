@@ -1,7 +1,6 @@
 import Constants from 'expo-constants';
 import { router, useFocusEffect } from 'expo-router';
 import * as Updates from 'expo-updates';
-import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 
@@ -26,11 +25,11 @@ import {
   type ProfileSummary,
 } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
+import { openSitePage } from '@/lib/site';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/auth-provider';
 
 // The app's website, with the privacy policy and terms (docs/ on GitHub Pages).
-const SITE = 'https://dylanashleyalves.github.io/whos-down';
 
 type NotifySwitch =
   | 'notify_messages'
@@ -280,13 +279,13 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="About">
-          <Row onPress={() => WebBrowser.openBrowserAsync(`${SITE}/privacy.html`)}>
+          <Row onPress={() => openSitePage('privacy.html')}>
             <ThemedText type="small" style={styles.grow}>
               🔒 Privacy policy
             </ThemedText>
             <Chevron />
           </Row>
-          <Row onPress={() => WebBrowser.openBrowserAsync(`${SITE}/terms.html`)}>
+          <Row onPress={() => openSitePage('terms.html')}>
             <ThemedText type="small" style={styles.grow}>
               📄 Terms of service
             </ThemedText>
