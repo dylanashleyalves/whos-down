@@ -1,0 +1,65 @@
+<!doctype html>
+<!-- Source for feature-graphic.png (1024x500), the banner on the Google Play listing.
+     Render: chrome --headless=new --window-size=1024,500 --screenshot=feature-graphic.png feature-graphic.html -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 1024px;
+        height: 500px;
+        overflow: hidden;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+      }
+      .banner {
+        position: relative;
+        width: 1024px;
+        height: 500px;
+        background: linear-gradient(135deg, #3c87f7 0%, #8b5cf6 55%, #ec4899 100%);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        padding: 0 72px;
+        box-sizing: border-box;
+      }
+      .text {
+        max-width: 560px;
+        z-index: 1;
+      }
+      h1 {
+        font-size: 92px;
+        line-height: 1;
+        margin: 0 0 22px;
+        font-weight: 800;
+        letter-spacing: -2px;
+      }
+      p {
+        font-size: 34px;
+        line-height: 1.25;
+        margin: 0;
+        font-weight: 600;
+        opacity: 0.95;
+      }
+      .emoji {
+        position: absolute;
+        font-family: 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+        filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.25));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="banner">
+      <div class="text">
+        <h1>Who&rsquo;s down?</h1>
+        <p>Meet people nearby by doing things together.</p>
+      </div>
+      <span class="emoji" style="font-size: 130px; right: 250px; top: 50px">🏀</span>
+      <span class="emoji" style="font-size: 110px; right: 70px; top: 90px">🎮</span>
+      <span class="emoji" style="font-size: 120px; right: 300px; top: 270px">🏋️</span>
+      <span class="emoji" style="font-size: 100px; right: 110px; top: 300px">🍜</span>
+      <span class="emoji" style="font-size: 60px; right: 200px; top: 215px">✨</span>
+    </div>
+  </body>
+</html>

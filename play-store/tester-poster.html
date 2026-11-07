@@ -1,0 +1,248 @@
+<!doctype html>
+<!-- Source for tester-poster.png (1080x1350), to share in Telegram and WhatsApp groups.
+     Render: chrome --headless=new --window-size=1080,1350 --screenshot=tester-poster.png tester-poster.html -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 1080px;
+        height: 1350px;
+        overflow: hidden;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        background: #0b0d17;
+        color: #fff;
+      }
+      .poster {
+        position: relative;
+        width: 1080px;
+        height: 1350px;
+        box-sizing: border-box;
+        padding: 64px 64px 56px;
+        background:
+          radial-gradient(circle at 85% 8%, rgba(236, 72, 153, 0.45), transparent 40%),
+          radial-gradient(circle at 5% 30%, rgba(60, 135, 247, 0.45), transparent 45%),
+          #0b0d17;
+        overflow: hidden;
+      }
+      .emoji {
+        font-family: 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+      }
+      .tag {
+        display: inline-block;
+        padding: 10px 22px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      h1 {
+        font-size: 84px;
+        line-height: 1;
+        margin: 28px 0 20px;
+        font-weight: 800;
+        letter-spacing: -3px;
+      }
+      .lead {
+        font-size: 38px;
+        line-height: 1.25;
+        font-weight: 600;
+        margin: 0;
+        width: 540px;
+        color: #dfe3f5;
+      }
+      .lead b {
+        color: #fff;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        width: 540px;
+        margin-top: 30px;
+      }
+      .chip {
+        padding: 10px 18px;
+        border-radius: 999px;
+        font-size: 24px;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .phones {
+        position: absolute;
+        top: 150px;
+        right: 24px;
+        width: 420px;
+        height: 540px;
+      }
+      .phone {
+        position: absolute;
+        width: 230px;
+        height: 460px;
+        border-radius: 30px;
+        border: 8px solid #1d2133;
+        overflow: hidden;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55);
+        background: #0b0d17;
+      }
+      .phone img {
+        width: 100%;
+        display: block;
+      }
+      .phone.back {
+        right: 0;
+        top: 0;
+        transform: rotate(8deg);
+      }
+      .phone.front {
+        left: 10px;
+        top: 70px;
+        transform: rotate(-6deg);
+      }
+      .steps {
+        position: absolute;
+        left: 64px;
+        right: 64px;
+        top: 712px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      .step {
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 28px;
+        padding: 22px 24px;
+      }
+      .step .emoji {
+        font-size: 50px;
+        line-height: 1;
+      }
+      .step h3 {
+        font-size: 31px;
+        margin: 10px 0 6px;
+        font-weight: 800;
+      }
+      .step p {
+        font-size: 24px;
+        line-height: 1.3;
+        margin: 0;
+        color: #b9bfd6;
+      }
+      .ask {
+        position: absolute;
+        left: 64px;
+        right: 64px;
+        top: 942px;
+        border-radius: 32px;
+        padding: 26px 36px;
+        background: linear-gradient(135deg, #3c87f7 0%, #8b5cf6 55%, #ec4899 100%);
+      }
+      .ask h2 {
+        font-size: 42px;
+        margin: 0 0 14px;
+        font-weight: 800;
+      }
+      .ask ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 6px;
+      }
+      .ask li {
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 1.25;
+      }
+      .cta {
+        position: absolute;
+        left: 64px;
+        right: 64px;
+        bottom: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .cta .big {
+        font-size: 48px;
+        font-weight: 800;
+      }
+      .cta .small {
+        font-size: 26px;
+        color: #b9bfd6;
+        margin-top: 6px;
+      }
+      .pill {
+        padding: 18px 30px;
+        border-radius: 999px;
+        background: #fff;
+        color: #0b0d17;
+        font-size: 30px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="poster">
+      <span class="tag"><span class="emoji">📍</span> Singapore · Android testers wanted</span>
+      <h1>Who&rsquo;s down?</h1>
+      <p class="lead">
+        Your friends are busy, but <b>someone nearby is down.</b> Find people to play, lift, game
+        and eat with.
+      </p>
+      <div class="chips">
+        <span class="chip" style="color: #fb923c"><span class="emoji">🏀</span> Sports</span>
+        <span class="chip" style="color: #f87171"><span class="emoji">🏋️</span> Gym</span>
+        <span class="chip" style="color: #a78bfa"><span class="emoji">🎮</span> Gaming</span>
+        <span class="chip" style="color: #fbbf24"><span class="emoji">🍜</span> Food</span>
+        <span class="chip" style="color: #4ade80"><span class="emoji">🥾</span> Outdoors</span>
+        <span class="chip" style="color: #f472b6"><span class="emoji">🍻</span> Hangouts</span>
+      </div>
+
+      <div class="phones">
+        <div class="phone back"><img src="screenshots/3-activity.png" alt="" /></div>
+        <div class="phone front"><img src="screenshots/2-feed.png" alt="" /></div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="emoji">📣</div>
+          <h3>Post a plan</h3>
+          <p>&ldquo;Basketball tonight, need 3 more&rdquo;</p>
+        </div>
+        <div class="step">
+          <div class="emoji">🙋</div>
+          <h3>Join one</h3>
+          <p>Tap &ldquo;I&rsquo;m down&rdquo; and sort it out in the group chat</p>
+        </div>
+        <div class="step">
+          <div class="emoji">🤝</div>
+          <h3>Build your crew</h3>
+          <p>Clicked with someone? Hang again any time</p>
+        </div>
+      </div>
+
+      <div class="ask">
+        <h2>Help me test it for 2 weeks <span class="emoji">🙏</span></h2>
+        <ul>
+          <li><span class="emoji">📱</span> Android phone + a Gmail address</li>
+          <li><span class="emoji">🗓️</span> Stay in the test for 14 days (Google&rsquo;s rule)</li>
+          <li><span class="emoji">⚡</span> Use it a few times and tell me what to fix</li>
+        </ul>
+      </div>
+
+      <div class="cta">
+        <div>
+          <div class="big">Keen? DM me <span class="emoji">🙌</span></div>
+          <div class="small">Free · No ads · 18+ · Report &amp; block built in</div>
+        </div>
+        <div class="pill">I&rsquo;m down <span class="emoji">🔥</span></div>
+      </div>
+    </div>
+  </body>
+</html>
