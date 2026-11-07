@@ -16,6 +16,9 @@ export type Profile = {
   status?: Status | null;
   status_until?: string | null;
   free_times?: FreeTime[];
+  // How they arranged their profile (0020); see src/lib/profile-layout.ts.
+  section_order?: string[];
+  hidden_sections?: string[];
 };
 
 export type ProfileSummary = Pick<Profile, 'id' | 'display_name' | 'avatar_url'>;

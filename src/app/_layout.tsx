@@ -63,6 +63,10 @@ function RootNavigator() {
           <Stack.Screen name="admin" options={{ headerShown: true, title: 'Moderation' }} />
           <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings' }} />
           <Stack.Screen
+            name="arrange-profile"
+            options={{ presentation: 'modal', headerShown: true, title: 'Arrange your profile' }}
+          />
+          <Stack.Screen
             name="report"
             options={{ presentation: 'modal', headerShown: true, title: 'Report' }}
           />
@@ -90,6 +94,10 @@ function RootNavigator() {
           <Stack.Screen name="demo/intro" />
           <Stack.Screen name="demo/onboarding" />
           <Stack.Screen name="demo/settings" options={{ headerShown: true, title: 'Settings' }} />
+          <Stack.Screen
+            name="demo/arrange"
+            options={{ headerShown: true, title: 'Arrange your profile' }}
+          />
           <Stack.Screen
             name="demo/post"
             options={{ headerShown: true, title: 'Post an activity' }}

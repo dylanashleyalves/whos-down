@@ -1,6 +1,6 @@
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AvatarRing } from '@/components/avatar-ring';
@@ -18,6 +18,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { confirmAction } from '@/lib/confirm';
 import { formatCountry } from '@/lib/countries';
 import { canMessage } from '@/lib/dms';
+import { PUBLIC_SECTIONS, visibleSections } from '@/lib/profile-layout';
 import { displayName, type Profile } from '@/lib/profiles';
 import { fetchFirstTimers, fetchUserStats, type UserStats } from '@/lib/ranks';
 import { shareProfile } from '@/lib/share';
@@ -173,11 +174,14 @@ export default function UserScreen() {
           </View>
         )}
 
-        <ProfileAbout profile={person} />
-
-        <KudosPills userId={person.id} />
-
-        {stats && <RankCard stats={stats} />}
+        {/* About, kudos and rank, in the order they arranged their profile. */}
+        {visibleSections(person, PUBLIC_SECTIONS).map((key) => (
+          <Fragment key={key}>
+            {key === 'about' && <ProfileAbout profile={person} />}
+            {key === 'kudos' && <KudosPills userId={person.id} />}
+            {key === 'rank' && stats && <RankCard stats={stats} />}
+          </Fragment>
+        ))}
 
         <PrimaryButton
           label="📤 Share profile"

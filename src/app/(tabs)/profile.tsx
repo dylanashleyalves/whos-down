@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { Fragment, useCallback, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,6 +20,7 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { currentStatus, STATUSES } from '@/lib/availability';
 import { formatCountry } from '@/lib/countries';
+import { visibleSections, type SectionKey } from '@/lib/profile-layout';
 import { displayName, type Profile } from '@/lib/profiles';
 import {
   daysSince,
@@ -68,6 +69,62 @@ export default function ProfileScreen() {
     }, [load])
   );
 
+  // Everything below the header, in the order the person chose (Arrange your profile).
+  const sections: Record<SectionKey, ReactNode> = {
+    status: <StatusPicker />,
+    about: <ProfileAbout profile={profile} />,
+    kudos: session ? <KudosPills userId={session.user.id} /> : null,
+    crew: (
+      <View style={styles.section}>
+        <ThemedText type="smallBold">Your crew ({crew.length})</ThemedText>
+        {crew.length === 0 ? (
+          <EmptyState
+            emoji="🤝"
+            color="#22C55E"
+            title="Your crew is empty, for now"
+            text={
+              'After a meetup, tap "Hang again?" on the people you’d see again. When they pick you too, they join your crew and you can message them.'
+            }
+            action={{ label: 'Find an activity', onPress: () => router.navigate('/') }}
+          />
+        ) : (
+          crew.map((friend) => {
+            const together = friendships.get(friend.id);
+            const daysApart = together?.last_together ? daysSince(together.last_together) : null;
+            const friendStatus = currentStatus(friend);
+            return (
+              <Pressable
+                key={friend.id}
+                onPress={() => router.push(`/user/${friend.id}`)}
+                style={styles.friend}>
+                <Avatar profile={friend} />
+                <View style={styles.grow}>
+                  <ThemedText type="smallBold">
+                    {displayName(friend)}
+                    {friendStatus && ` ${STATUSES[friendStatus].emoji}`}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {friendStatus && `${STATUSES[friendStatus].label} · `}
+                    {friendshipLevel(together?.times_together ?? 0)}
+                    {daysApart !== null &&
+                      ` · ${daysApart === 0 ? 'hung out today' : `last hung out ${daysApart}d ago`}`}
+                  </ThemedText>
+                  {daysApart !== null && daysApart >= NUDGE_AFTER_DAYS && (
+                    <ThemedText type="small" style={styles.nudge}>
+                      It&apos;s been a while. Who&apos;s down? 👋
+                    </ThemedText>
+                  )}
+                </View>
+              </Pressable>
+            );
+          })
+        )}
+      </View>
+    ),
+    rank: stats ? <RankCard stats={stats} /> : null,
+    socials: <MySocials socials={socials} />,
+  };
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -113,59 +170,17 @@ export default function ProfileScreen() {
 
           {profile && <ProfileChecklist profile={profile} />}
 
-          <StatusPicker />
+          {visibleSections(profile).map((key) => (
+            <Fragment key={key}>{sections[key]}</Fragment>
+          ))}
 
-          <ProfileAbout profile={profile} />
-
-          {session && <KudosPills userId={session.user.id} />}
-
-          <ThemedText type="smallBold">Your crew ({crew.length})</ThemedText>
-          {crew.length === 0 ? (
-            <EmptyState
-              emoji="🤝"
-              color="#22C55E"
-              title="Your crew is empty, for now"
-              text={
-                'After a meetup, tap "Hang again?" on the people you’d see again. When they pick you too, they join your crew and you can message them.'
-              }
-              action={{ label: 'Find an activity', onPress: () => router.navigate('/') }}
-            />
-          ) : (
-            crew.map((friend) => {
-              const together = friendships.get(friend.id);
-              const daysApart = together?.last_together ? daysSince(together.last_together) : null;
-              const friendStatus = currentStatus(friend);
-              return (
-                <Pressable
-                  key={friend.id}
-                  onPress={() => router.push(`/user/${friend.id}`)}
-                  style={styles.friend}>
-                  <Avatar profile={friend} />
-                  <View style={styles.grow}>
-                    <ThemedText type="smallBold">
-                      {displayName(friend)}
-                      {friendStatus && ` ${STATUSES[friendStatus].emoji}`}
-                    </ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {friendStatus && `${STATUSES[friendStatus].label} · `}
-                      {friendshipLevel(together?.times_together ?? 0)}
-                      {daysApart !== null &&
-                        ` · ${daysApart === 0 ? 'hung out today' : `last hung out ${daysApart}d ago`}`}
-                    </ThemedText>
-                    {daysApart !== null && daysApart >= NUDGE_AFTER_DAYS && (
-                      <ThemedText type="small" style={styles.nudge}>
-                        It&apos;s been a while. Who&apos;s down? 👋
-                      </ThemedText>
-                    )}
-                  </View>
-                </Pressable>
-              );
-            })
-          )}
-
-          {stats && <RankCard stats={stats} />}
-
-          <MySocials socials={socials} />
+          <Pressable
+            onPress={() => router.push('/arrange-profile')}
+            style={({ pressed }) => [styles.arrange, pressed && styles.pressed]}>
+            <ThemedText type="small" themeColor="textSecondary">
+              ↕️ Arrange your profile
+            </ThemedText>
+          </Pressable>
 
           {isAdmin && <PrimaryButton label="🛡️ Moderation" onPress={() => router.push('/admin')} />}
         </ScrollView>
@@ -197,6 +212,13 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: Spacing.two,
+  },
+  section: {
+    gap: Spacing.three,
+  },
+  arrange: {
+    alignSelf: 'center',
+    padding: Spacing.two,
   },
   friend: {
     flexDirection: 'row',

@@ -36,10 +36,10 @@ function at(days: number, hour: number, minute = 0) {
   const date = new Date();
   date.setDate(date.getDate() + days);
   date.setHours(hour, minute, 0, 0);
-  // If "today" has already passed that time, push it to later this evening.
+  // If that time has already passed (or is within the hour), use the same time a day later,
+  // so screenshots taken late at night don't show activities at 1:30 AM.
   if (date.getTime() < Date.now() + 60 * 60 * 1000) {
-    date.setTime(Date.now() + 2 * 60 * 60 * 1000);
-    date.setMinutes(date.getMinutes() < 30 ? 30 : 60, 0, 0);
+    date.setDate(date.getDate() + 1);
   }
   return date.toISOString();
 }
