@@ -1,6 +1,7 @@
 // Sends push notifications through Expo's push service.
 // Called by database triggers (new group message, direct message, someone joining, a new
-// activity, kudos, someone in your crew being free) and
+// activity, kudos, someone in your crew being free, "I'm down too" on an idea, an idea
+// being hosted) and
 // every 15 minutes by a cron job for reminders. See 0011_push_notifications.sql.
 //
 // Secret (Supabase Dashboard -> Edge Functions -> Secrets):
@@ -358,6 +359,98 @@ async function onStatus(record: { id: string; status: string }) {
   );
 }
 
+// Once this many people (including whoever posted it) are down for an idea, everyone hears.
+const IDEA_READY_AT = 3;
+
+// Everyone down for an idea: whoever posted it plus everyone who tapped "I'm down too".
+async function ideaPeople(ideaId: string) {
+  const [idea, interest] = await Promise.all([
+    supabase.from('ideas').select('user_id, title, category').eq('id', ideaId).maybeSingle(),
+    supabase.from('idea_interest').select('user_id').eq('idea_id', ideaId),
+  ]);
+  if (!idea.data) return null;
+  const ids = new Set((interest.data ?? []).map((row) => row.user_id as string));
+  ids.add(idea.data.user_id as string);
+  return {
+    ownerId: idea.data.user_id as string,
+    title: idea.data.title as string,
+    emoji: CATEGORY_EMOJI[idea.data.category as string] ?? '✨',
+    ids: [...ids],
+  };
+}
+
+// Someone tapped "I'm down too": tell whoever posted it (once per person), and once enough
+// people are keen, tell all of them so someone hosts it.
+async function onIdeaInterest(record: { idea_id: string; user_id: string }) {
+  const idea = await ideaPeople(record.idea_id);
+  if (!idea) return 0;
+  const pushes: Push[] = [];
+
+  const [owner] = await withoutBlocked([idea.ownerId], record.user_id);
+  if (
+    owner &&
+    (await firstTime([owner], 'idea_interest', `${record.idea_id}:${record.user_id}`)).length > 0
+  ) {
+    pushes.push({
+      userId: owner,
+      kind: 'joins',
+      title: `🙌 ${await nameOf(record.user_id)} is down too`,
+      body: `For your idea: ${preview(idea.title)}`,
+      href: `/idea/${record.idea_id}`,
+    });
+  }
+
+  if (idea.ids.length >= IDEA_READY_AT) {
+    for (const userId of await firstTime(idea.ids, 'idea_ready', record.idea_id)) {
+      pushes.push({
+        userId,
+        kind: 'activities',
+        title: `🔥 ${idea.ids.length} people are down!`,
+        body: `${idea.emoji} ${preview(idea.title)}. Tap "Host it" to pick a time and place.`,
+        href: `/idea/${record.idea_id}`,
+      });
+    }
+  }
+  return send(pushes);
+}
+
+// Someone hosted an idea as a real activity: tell everyone who was keen so they can join.
+async function onIdeaHosted(record: { idea_id: string; activity_id: string; host_id: string }) {
+  const [idea, activity] = await Promise.all([
+    ideaPeople(record.idea_id),
+    supabase
+      .from('activities')
+      .select('title, starts_at')
+      .eq('id', record.activity_id)
+      .maybeSingle(),
+  ]);
+  if (!idea || !activity.data) return 0;
+  const ids = await withoutBlocked(
+    idea.ids.filter((id) => id !== record.host_id),
+    record.host_id
+  );
+  const recipients = await firstTime(ids, 'idea_hosted', record.idea_id);
+  if (recipients.length === 0) return 0;
+  const host = await nameOf(record.host_id);
+  const when = new Date(activity.data.starts_at as string).toLocaleString('en-SG', {
+    timeZone: 'Asia/Singapore',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return send(
+    recipients.map((userId) => ({
+      userId,
+      kind: 'activities' as const,
+      title: "🎉 It's on!",
+      body: `${host} is hosting ${preview(activity.data.title as string)}, ${when}. Tap to grab a spot.`,
+      href: `/activity/${record.activity_id}`,
+    }))
+  );
+}
+
 async function reminders() {
   const now = Date.now();
   const pushes: Push[] = [];
@@ -438,22 +531,21 @@ Deno.serve(async (request) => {
   try {
     const { type, record } = await request.json();
     deliveryErrors = [];
-    const sent =
-      type === 'message'
-        ? await onGroupMessage(record)
-        : type === 'dm'
-          ? await onDirectMessage(record)
-          : type === 'join'
-            ? await onJoin(record)
-            : type === 'activity'
-              ? await onActivity(record)
-              : type === 'kudos'
-                ? await onKudos(record)
-                : type === 'status'
-                  ? await onStatus(record)
-                  : type === 'reminders'
-                    ? await reminders()
-                    : 0;
+    // Which trigger sent this (the argument to notify_push in the migrations).
+    // deno-lint-ignore no-explicit-any
+    const handlers: Record<string, (record: any) => Promise<number>> = {
+      message: onGroupMessage,
+      dm: onDirectMessage,
+      join: onJoin,
+      activity: onActivity,
+      kudos: onKudos,
+      status: onStatus,
+      idea_interest: onIdeaInterest,
+      idea_hosted: onIdeaHosted,
+      reminders: () => reminders(),
+    };
+    const handler = handlers[type as string];
+    const sent = handler ? await handler(record) : 0;
     const problems = deliveryErrors.length > 0 ? ` (errors: ${deliveryErrors.join('; ')})` : '';
     return new Response(`Sent ${sent}${problems}`, { status: 200 });
   } catch (error) {

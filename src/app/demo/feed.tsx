@@ -6,12 +6,13 @@ import { ActivityCard } from '@/components/activity-card';
 import { BackdropGlow } from '@/components/art';
 import { Chip } from '@/components/chip';
 import { DemoTabBar } from '@/components/demo-tab-bar';
+import { IdeasStrip } from '@/components/ideas-strip';
 import { ThemedText } from '@/components/themed-text';
 import { WelcomeBanner } from '@/components/welcome-banner';
 import { ThemedView } from '@/components/themed-view';
 import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
 import { Categories, type Category } from '@/lib/activities';
-import { DEMO_ACTIVITIES, DEMO_ME } from '@/lib/demo-data';
+import { DEMO_ACTIVITIES, DEMO_IDEAS, DEMO_ME } from '@/lib/demo-data';
 
 // Dev-only copy of the Feed with sample data, for screenshots.
 export default function DemoFeedScreen() {
@@ -22,7 +23,7 @@ export default function DemoFeedScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.header}>
             <ThemedText type="subtitle">Who&apos;s down?</ThemedText>
-            <View style={styles.postButton}>
+            <View style={styles.postButton} onTouchEnd={() => router.push('/demo/new-post')}>
               <ThemedText type="smallBold" style={styles.white}>
                 + Post
               </ThemedText>
@@ -71,6 +72,15 @@ export default function DemoFeedScreen() {
               💬 2 new messages in My plans
             </ThemedText>
           </View>
+
+          <IdeasStrip
+            ideas={DEMO_IDEAS}
+            myId={DEMO_ME.id}
+            title="💡 People would be down for…"
+            onChanged={() => {}}
+          />
+
+          <ThemedText type="smallBold">📅 Happening soon</ThemedText>
 
           {/* No slide-in animation here, so screenshots never catch cards mid-way. */}
           {DEMO_ACTIVITIES.map((activity) => (

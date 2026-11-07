@@ -49,6 +49,15 @@ function RootNavigator() {
             options={{ presentation: 'modal', headerShown: true, title: 'Post an activity' }}
           />
           <Stack.Screen
+            name="new-post"
+            options={{ presentation: 'modal', headerShown: true, title: 'New post' }}
+          />
+          <Stack.Screen
+            name="new-idea"
+            options={{ presentation: 'modal', headerShown: true, title: "I'd be down for…" }}
+          />
+          <Stack.Screen name="idea/[id]" options={{ headerShown: true, title: 'Idea' }} />
+          <Stack.Screen
             name="edit-activity/[id]"
             options={{ presentation: 'modal', headerShown: true, title: 'Edit activity' }}
           />
@@ -97,6 +106,11 @@ function RootNavigator() {
           <Stack.Screen
             name="demo/arrange"
             options={{ headerShown: true, title: 'Arrange your profile' }}
+          />
+          <Stack.Screen name="demo/new-post" options={{ headerShown: true, title: 'New post' }} />
+          <Stack.Screen
+            name="demo/idea-form"
+            options={{ headerShown: true, title: "I'd be down for…" }}
           />
           <Stack.Screen
             name="demo/post"

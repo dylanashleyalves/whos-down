@@ -30,6 +30,8 @@ import {
   type Category,
 } from '@/lib/activities';
 import { formatCountry } from '@/lib/countries';
+import { peopleDown, SPOTS_FOR_SIZE, type IdeaWithPeople } from '@/lib/ideas';
+import { displayName } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/auth-provider';
@@ -128,9 +130,11 @@ const QUICK_STARTS: { title: string; category: Category; spots: number; details?
 type ActivityFormProps = {
   // When given, the form edits this activity instead of posting a new one.
   existing?: ActivityWithPeople;
+  // When given, a new post that hosts this idea: filled in from it and linked to it.
+  fromIdea?: IdeaWithPeople;
 };
 
-export function ActivityForm({ existing }: ActivityFormProps) {
+export function ActivityForm({ existing, fromIdea }: ActivityFormProps) {
   const theme = useTheme();
   const { session, profile, privateProfile } = useAuth();
   // Hosts can make an activity just for their own gender, or open it to everyone.
@@ -145,16 +149,31 @@ export function ActivityForm({ existing }: ActivityFormProps) {
   // Can't drop below the number of people who already joined.
   const minSpots = Math.max(1, existing?.members.length ?? 0);
 
-  const [title, setTitle] = useState(existing?.title ?? '');
-  const [category, setCategory] = useState<Category>(existing?.category ?? 'sports');
-  const [audience, setAudience] = useState<Audience>(existing?.audience ?? 'everyone');
-  const [location, setLocation] = useState(existing?.location ?? '');
+  // Everyone down for the idea, apart from whoever is hosting it.
+  const ideaPeople = fromIdea
+    ? peopleDown(fromIdea).filter((person) => person.id !== session?.user.id)
+    : [];
+
+  const [title, setTitle] = useState(existing?.title ?? fromIdea?.title ?? '');
+  const [category, setCategory] = useState<Category>(
+    existing?.category ?? fromIdea?.category ?? 'sports'
+  );
+  const [audience, setAudience] = useState<Audience>(
+    existing?.audience ?? fromIdea?.audience ?? 'everyone'
+  );
+  const [location, setLocation] = useState(existing?.location ?? fromIdea?.area ?? '');
   const [dayIndex, setDayIndex] = useState(() => initialDayIndex(days, existingStart));
   const [startsAt, setStartsAt] = useState<Date | null>(
     () => existingStart ?? timeSlots(days[dayIndex])[0] ?? null
   );
-  const [spots, setSpots] = useState(existing?.spots ?? 3);
-  const [details, setDetails] = useState(existing?.details ?? '');
+  const [spots, setSpots] = useState(
+    () =>
+      existing?.spots ??
+      (fromIdea
+        ? Math.min(50, Math.max(SPOTS_FOR_SIZE[fromIdea.group_size], ideaPeople.length))
+        : 3)
+  );
+  const [details, setDetails] = useState(existing?.details ?? fromIdea?.note ?? '');
   // Null until an existing activity's note has loaded, so saving can't wipe it.
   const [note, setNote] = useState<string | null>(existing ? null : '');
   const [busy, setBusy] = useState(false);
@@ -222,6 +241,20 @@ export function ActivityForm({ existing }: ActivityFormProps) {
       return;
     }
 
+    // Link it to the idea, which tells everyone who was down. The activity is posted
+    // either way, so a failure here (say someone else hosted it first) just gets a mention.
+    let linked = true;
+    if (fromIdea && !existing) {
+      const { error: linkError } = await supabase.rpc('host_idea', {
+        target_idea: fromIdea.id,
+        target_activity: data.id,
+      });
+      if (linkError) {
+        console.warn('Could not link the idea', linkError);
+        linked = false;
+      }
+    }
+
     // The activity is saved by now, so a note that fails shouldn't stop them moving on.
     let noteSaved = true;
     if (note !== null && (existing || note.trim())) {
@@ -234,7 +267,13 @@ export function ActivityForm({ existing }: ActivityFormProps) {
     }
 
     setBusy(false);
-    if (!noteSaved) {
+    if (!linked) {
+      showToast("Posted! 🎉 But we couldn't tell the people from the idea. Share it with them.");
+    } else if (fromIdea && !existing) {
+      showToast(`Posted! 🎉 We've told the ${ideaPeople.length} people who were down`);
+      router.replace(`/activity/${data.id}`);
+      return;
+    } else if (!noteSaved) {
       showToast('Saved, but "How to find us" didn’t. Try Edit activity.');
     } else {
       showToast(existing ? 'Changes saved ✓' : "Posted! 🎉 We'll let you know when people join");
@@ -259,7 +298,23 @@ export function ActivityForm({ existing }: ActivityFormProps) {
             </ThemedView>
           )}
 
-          {!existing && (
+          {fromIdea && (
+            <ThemedView type="backgroundElement" style={styles.notice}>
+              <ThemedText type="smallBold">
+                💡 Hosting{' '}
+                {fromIdea.user_id === session?.user.id
+                  ? 'your idea'
+                  : `${displayName(fromIdea.poster)}'s idea`}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {ideaPeople.length > 0
+                  ? `We filled this in from the idea. Pick a time and place, and the ${ideaPeople.length} ${ideaPeople.length === 1 ? 'person' : 'people'} who were down get invited to join.`
+                  : 'We filled this in from the idea. Pick a time and place to make it real.'}
+              </ThemedText>
+            </ThemedView>
+          )}
+
+          {!existing && !fromIdea && (
             <Field label="Quick start">
               <ScrollView
                 horizontal

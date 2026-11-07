@@ -16,6 +16,7 @@ import { ActivityCard } from '@/components/activity-card';
 import { BackdropGlow } from '@/components/art';
 import { Chip } from '@/components/chip';
 import { EmptyState } from '@/components/empty-state';
+import { IdeasStrip } from '@/components/ideas-strip';
 import { QuietReminder } from '@/components/quiet-reminder';
 import { WelcomeBanner } from '@/components/welcome-banner';
 import { ThemedText } from '@/components/themed-text';
@@ -30,6 +31,7 @@ import {
   type Category,
 } from '@/lib/activities';
 import { fetchUnreadCounts } from '@/lib/chat';
+import { fetchOpenIdeas, isDown, type IdeaWithPeople } from '@/lib/ideas';
 import { fetchFirstTimers, fetchXp } from '@/lib/ranks';
 import { formatCountry } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
@@ -114,18 +116,34 @@ export default function FeedScreen() {
   // Hosts' recent XP, for the rank badges on cards.
   const [hostXp, setHostXp] = useState<Map<string, number>>(new Map());
   const [firstTimers, setFirstTimers] = useState<Set<string>>(new Set());
+  const [ideas, setIdeas] = useState<IdeaWithPeople[]>([]);
 
   // My plans includes past activities, so the When filter is only for Discover.
   const timeFilter = view === 'discover' ? when : null;
   const shown = activities.filter(
     (a) => (!filter || a.category === filter) && (!timeFilter || startsWithin(a, timeFilter))
   );
+  // Ideas have no set time, so only the category filter applies. My plans shows the ones
+  // you posted or said you're down for.
+  const shownIdeas = ideas.filter(
+    (idea) => (!filter || idea.category === filter) && (view === 'discover' || isDown(idea, myId))
+  );
+
+  const loadIdeas = useCallback(async () => {
+    try {
+      setIdeas(await fetchOpenIdeas());
+    } catch (e) {
+      // Ideas are extra: if they can't load, the activities still show.
+      console.warn('Could not load ideas', e);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
       const [result, counts] = await Promise.all([
         view === 'mine' && myId ? fetchMyPlans(myId) : fetchDiscover(myId),
         fetchUnreadCounts(),
+        loadIdeas(),
       ]);
       setActivities(result);
       setUnread(counts);
@@ -138,7 +156,7 @@ export default function FeedScreen() {
       setError(e instanceof Error ? e.message : 'Could not load activities.');
     }
     setLoadedView(view);
-  }, [view, myId]);
+  }, [view, myId, loadIdeas]);
 
   // Reload whenever the feed comes back into view, e.g. after posting.
   useFocusEffect(
@@ -160,7 +178,7 @@ export default function FeedScreen() {
         <View style={styles.header}>
           <ThemedText type="subtitle">Who&apos;s down?</ThemedText>
           <Pressable
-            onPress={() => router.push('/new-activity')}
+            onPress={() => router.push('/new-post')}
             style={({ pressed }) => pressed && styles.pressed}>
             <View style={styles.postButton}>
               <ThemedText type="smallBold" style={styles.postLabel}>
@@ -249,12 +267,28 @@ export default function FeedScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             ListHeaderComponent={
-              view === 'discover' ? (
-                <WelcomeBanner
-                  name={profile?.display_name}
-                  place={formatCountry(profile?.country)}
+              <View style={styles.listHeader}>
+                {view === 'discover' && (
+                  <WelcomeBanner
+                    name={profile?.display_name}
+                    place={formatCountry(profile?.country)}
+                  />
+                )}
+                <IdeasStrip
+                  ideas={shownIdeas}
+                  myId={myId}
+                  title={
+                    view === 'discover'
+                      ? '💡 People would be down for…'
+                      : "💡 Ideas you're down for"
+                  }
+                  showAdd={view === 'discover'}
+                  onChanged={loadIdeas}
                 />
-              ) : undefined
+                {view === 'discover' && shown.length > 0 && (
+                  <ThemedText type="smallBold">📅 Happening soon</ThemedText>
+                )}
+              </View>
             }
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
             renderItem={({ item, index }) => (
@@ -301,10 +335,10 @@ export default function FeedScreen() {
                 <EmptyState
                   emoji="🌱"
                   title="Nothing on yet"
-                  text="Be the first! Post a game, a gym session or a coffee and people nearby can join you."
+                  text="Be the first! Post a game, a gym session or a coffee, or share something you'd be down for and see who's keen."
                   action={{
-                    label: '+ Post an activity',
-                    onPress: () => router.push('/new-activity'),
+                    label: '+ Post something',
+                    onPress: () => router.push('/new-post'),
                   }}
                 />
               )
@@ -344,6 +378,9 @@ const styles = StyleSheet.create({
   },
   postLabel: {
     color: '#ffffff',
+  },
+  listHeader: {
+    gap: Spacing.three,
   },
   list: {
     gap: Spacing.three,
