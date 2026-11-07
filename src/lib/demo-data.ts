@@ -185,6 +185,7 @@ function idea(
     note: null,
     audience: 'everyone',
     activity_id: null,
+    hidden_at: null,
     created_at: new Date().toISOString(),
     expires_at: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
     ...fields,

@@ -112,6 +112,20 @@ export default function AdminScreen() {
     });
   }
 
+  async function deleteIdea(report: AdminReport) {
+    const ok = await confirmAction(
+      'Delete this idea?',
+      `"${report.idea_text}" will be removed for everyone.`,
+      'Delete'
+    );
+    if (!ok) return;
+    act(report.id, () => supabase.rpc('admin_delete_idea', { target_idea: report.idea_id }));
+  }
+
+  function restoreIdea(report: AdminReport) {
+    act(report.id, () => supabase.rpc('admin_restore_idea', { target_idea: report.idea_id }));
+  }
+
   async function toggleBan(report: AdminReport, userId: string, name: string, banned: boolean) {
     if (!banned) {
       const ok = await confirmAction(
@@ -245,6 +259,8 @@ export default function AdminScreen() {
               busy={busyId === report.id}
               onStatus={(status) => setStatus(report, status)}
               onDeleteActivity={() => deleteActivity(report)}
+              onDeleteIdea={() => deleteIdea(report)}
+              onRestoreIdea={() => restoreIdea(report)}
               onToggleBan={(userId, name, banned) => toggleBan(report, userId, name, banned)}
             />
           ))
@@ -259,10 +275,20 @@ type ReportCardProps = {
   busy: boolean;
   onStatus: (status: ReportStatus) => void;
   onDeleteActivity: () => void;
+  onDeleteIdea: () => void;
+  onRestoreIdea: () => void;
   onToggleBan: (userId: string, name: string, banned: boolean) => void;
 };
 
-function ReportCard({ report, busy, onStatus, onDeleteActivity, onToggleBan }: ReportCardProps) {
+function ReportCard({
+  report,
+  busy,
+  onStatus,
+  onDeleteActivity,
+  onDeleteIdea,
+  onRestoreIdea,
+  onToggleBan,
+}: ReportCardProps) {
   const created = new Date(report.created_at);
   // The person to act on: whoever was reported, or the host of a reported activity.
   const targetId = report.reported_user_id ?? report.activity_host_id;
@@ -301,6 +327,12 @@ function ReportCard({ report, busy, onStatus, onDeleteActivity, onToggleBan }: R
       {report.activity_id && (
         <ThemedText type="small">📌 {report.activity_title ?? 'Deleted activity'}</ThemedText>
       )}
+      {report.idea_text && (
+        <ThemedText type="small">
+          💡 {report.idea_text}
+          {!report.idea_id ? ' (deleted)' : report.idea_hidden ? ' (hidden after 3 reports)' : ''}
+        </ThemedText>
+      )}
 
       {busy ? (
         <ActivityIndicator style={styles.actionsSpinner} />
@@ -308,6 +340,10 @@ function ReportCard({ report, busy, onStatus, onDeleteActivity, onToggleBan }: R
         <View style={styles.actions}>
           {report.activity_id && report.activity_title && (
             <Action label="Delete activity" danger onPress={onDeleteActivity} />
+          )}
+          {report.idea_id && <Action label="Delete idea" danger onPress={onDeleteIdea} />}
+          {report.idea_id && report.idea_hidden && (
+            <Action label="Restore idea" onPress={onRestoreIdea} />
           )}
           {targetId && (
             <Action

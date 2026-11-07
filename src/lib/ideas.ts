@@ -48,6 +48,8 @@ export type Idea = {
   note: string | null;
   audience: Audience;
   activity_id: string | null;
+  // Set once 3 people report it, until an admin checks it (0022_post_safety.sql).
+  hidden_at: string | null;
   created_at: string;
   expires_at: string;
 };
@@ -78,6 +80,7 @@ export async function fetchOpenIdeas() {
     .from('ideas')
     .select(IDEA_WITH_PEOPLE)
     .is('activity_id', null)
+    .is('hidden_at', null)
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
     .limit(30);

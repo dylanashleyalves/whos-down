@@ -31,6 +31,10 @@ export type AdminReport = {
   activity_host_name: string | null;
   // Whether the person a moderator would act on (reported user, or the host) is banned.
   target_banned: boolean;
+  // A reported idea (0022), what it said when reported, and whether it's hidden.
+  idea_id: string | null;
+  idea_text: string | null;
+  idea_hidden: boolean;
 };
 
 export type BannedUser = {

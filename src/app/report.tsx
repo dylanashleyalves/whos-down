@@ -14,9 +14,13 @@ import { supabase } from '@/lib/supabase';
 const REASONS = REPORT_REASONS;
 type Reason = ReportReason;
 
-// Reports a person, an activity, or both. Reports go to the reports table for review.
+// Reports a person, an activity or an idea (or a person and their activity). Reports go to the reports table for review.
 export default function ReportScreen() {
-  const { userId, activityId } = useLocalSearchParams<{ userId?: string; activityId?: string }>();
+  const { userId, activityId, ideaId } = useLocalSearchParams<{
+    userId?: string;
+    activityId?: string;
+    ideaId?: string;
+  }>();
   const theme = useTheme();
 
   const [reason, setReason] = useState<Reason | null>(null);
@@ -35,11 +39,14 @@ export default function ReportScreen() {
     const { error } = await supabase.from('reports').insert({
       reported_user_id: userId ?? null,
       activity_id: activityId ?? null,
+      // The database fills in who posted the idea.
+      idea_id: ideaId ?? null,
       reason,
       details: details.trim() || null,
     });
     setBusy(false);
-    if (error) setError(error.message);
+    // 23505: they already reported this idea, which is fine.
+    if (error && error.code !== '23505') setError(error.message);
     else setSent(true);
   }
 
@@ -50,7 +57,12 @@ export default function ReportScreen() {
           <ThemedText type="subtitle">Thanks for telling us</ThemedText>
           <ThemedText themeColor="textSecondary">
             Your report is private. We&apos;ll review it and take action if it breaks the community
-            guidelines.{userId ? ' You can also block this person from their profile.' : ''}
+            guidelines.
+            {ideaId
+              ? ' If a few people report the same idea, it’s hidden straight away until we check it.'
+              : userId
+                ? ' You can also block this person from their profile.'
+                : ''}
           </ThemedText>
           <PrimaryButton label="Done" onPress={() => router.back()} />
         </View>
@@ -62,8 +74,12 @@ export default function ReportScreen() {
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ThemedText themeColor="textSecondary">
-          {activityId ? "What's wrong with this activity?" : "What's going on?"} The person won&apos;t
-          know you reported them.
+          {activityId
+            ? "What's wrong with this activity?"
+            : ideaId
+              ? "What's wrong with this idea?"
+              : "What's going on?"}{' '}
+          The person won&apos;t know you reported them.
         </ThemedText>
 
         <View style={styles.reasons}>

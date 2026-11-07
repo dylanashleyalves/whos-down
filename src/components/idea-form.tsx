@@ -90,6 +90,7 @@ export function IdeaForm() {
     note: note.trim() || null,
     audience,
     activity_id: null,
+    hidden_at: null,
     created_at: new Date().toISOString(),
     expires_at: new Date().toISOString(),
     poster: profile

@@ -73,6 +73,7 @@ export default function IdeaScreen() {
   const down = isDown(current, myId);
   const people = peopleDown(current);
   const hosted = !!current.activity_id;
+  const hidden = !!current.hidden_at;
   const ended = !hosted && daysLeft(current) === 0;
   const needed = Math.max(IDEA_READY_AT - people.length, 0);
 
@@ -110,7 +111,15 @@ export default function IdeaScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <IdeaCard idea={current} myId={myId} onPress={null} />
 
-        {hosted ? (
+        {hidden ? (
+          <ThemedView type="backgroundElement" style={styles.status}>
+            <ThemedText type="smallBold">🙈 Hidden while we check some reports</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              A few people reported this idea, so nobody else can see it for now. We&apos;ll bring
+              it back if it&apos;s fine.
+            </ThemedText>
+          </ThemedView>
+        ) : hosted ? (
           <ThemedView type="backgroundElement" style={styles.status}>
             <ThemedText type="smallBold">🎉 It&apos;s on! Someone is hosting this.</ThemedText>
             <PrimaryButton
@@ -196,12 +205,10 @@ export default function IdeaScreen() {
             </Pressable>
           ) : (
             <Pressable
-              onPress={() =>
-                router.push({ pathname: '/report', params: { userId: current.user_id } })
-              }
+              onPress={() => router.push({ pathname: '/report', params: { ideaId: current.id } })}
               hitSlop={6}>
               <ThemedText type="small" themeColor="textSecondary">
-                Report
+                Report idea
               </ThemedText>
             </Pressable>
           )}
