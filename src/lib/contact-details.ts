@@ -1,5 +1,5 @@
 // Spots social handles, links and phone numbers in bios. The database runs the same check
-// when a bio is saved: keep in step with supabase/migrations/0017_more_socials.sql.
+// when a bio is saved: keep in step with supabase/migrations/0023_handles_and_places.sql.
 const PLATFORMS =
   'ig|insta|instagram|snap|snapchat|telegram|tele|tg|tiktok|whatsapp|wa|discord|fb|facebook|twitter|spotify';
 
@@ -16,6 +16,9 @@ const CONTACT_PATTERNS = [
   String.raw`\b(add|follow|dm|message|msg|text|find|contact|reach|ping|hmu|hit)\b(\s+me)?(\s+(up|on|at|via|in|through))*\s+(${PLATFORMS})\b`,
   // "ig dylan_01": a platform, then something shaped like a handle
   /\b(ig|insta|instagram|snap|snapchat|telegram|tele|tg|tiktok|discord)\b\s+[a-z0-9_.]*[0-9_.][a-z0-9_.]*/,
+  // "ig dylanisthegoat": "ig", "tg" and "tele" aren't everyday words, so any word after
+  // them is a handle
+  /\b(ig|tg|tele)\b\s+[a-z][a-z0-9_.]{2,}/,
   // Camera or ghost emoji as a label: "📸: name"
   /(📸|👻)\s*:\s*[a-z0-9_.]{3,}/,
   // 8 or more digits
