@@ -19,7 +19,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.whosdown.app",
+      "package": "com.dylanalves.whosdown",
       "googleServicesFile": "./google-services.json",
       "runtimeVersion": {
         "policy": "appVersion"

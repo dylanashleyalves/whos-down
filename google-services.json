@@ -7,6 +7,28 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:1018650751423:android:366ff53035e249ca84710a",
+        "android_client_info": {
+          "package_name": "com.dylanalves.whosdown"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5xxFBOu-r1EZt9YwqgXWNIZM7f7kp-e0"
+        },
+        {
+          "current_key": "AIzaSyDxqW1nP1noP7BX4fjP3vP6wtgG0rFmHRo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:1018650751423:android:39b6ae842d3b5c5a84710a",
         "android_client_info": {
           "package_name": "com.whosdown.app"
@@ -14,6 +36,9 @@
       },
       "oauth_client": [],
       "api_key": [
+        {
+          "current_key": "AIzaSyA5xxFBOu-r1EZt9YwqgXWNIZM7f7kp-e0"
+        },
         {
           "current_key": "AIzaSyDxqW1nP1noP7BX4fjP3vP6wtgG0rFmHRo"
         }
