@@ -195,6 +195,21 @@ function idea(
 }
 
 export const DEMO_IDEAS: IdeaWithPeople[] = [
+  // One you were down for that someone hosted: it leads to the plan.
+  {
+    ...idea(
+      'idea-futsal',
+      ryan,
+      { title: '⚽ Casual futsal', category: 'sports', timing: 'flexible', group_size: 'big' },
+      [DEMO_ME, arjun]
+    ),
+    activity_id: 'demo-futsal',
+    activity: {
+      id: 'demo-futsal',
+      title: '⚽ Casual futsal',
+      starts_at: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+    },
+  },
   idea(
     'idea-hotpot',
     daniel,

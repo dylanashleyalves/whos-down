@@ -54,9 +54,14 @@ export type Idea = {
   expires_at: string;
 };
 
+// The activity someone made from an idea, when it's been hosted.
+export type IdeaPlan = { id: string; title: string; starts_at: string };
+
 export type IdeaWithPeople = Idea & {
   poster: ProfileSummary | null;
   interest: { user_id: string; profile: ProfileSummary | null }[];
+  // Only loaded for hosted ideas (fetchMyHostedIdeas). Null if you can't see the activity.
+  activity?: IdeaPlan | null;
 };
 
 export const IDEA_WITH_PEOPLE = `*,
@@ -86,6 +91,31 @@ export async function fetchOpenIdeas() {
     .limit(30);
   if (error) throw error;
   return data as unknown as IdeaWithPeople[];
+}
+
+// How long after a hosted plan starts its "It's on!" card stays up.
+const PLAN_SHOWN_AFTER_START_MS = 6 * 60 * 60 * 1000;
+
+// Ideas you posted or were down for that someone has hosted, so you can find the plan.
+// They leave the open ideas once hosted, and you aren't joined automatically.
+export async function fetchMyHostedIdeas(myId: string | undefined) {
+  if (!myId) return [];
+  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('ideas')
+    .select(`${IDEA_WITH_PEOPLE}, activity:activities(id, title, starts_at)`)
+    .not('activity_id', 'is', null)
+    .is('hidden_at', null)
+    .gt('hosted_at', since)
+    .order('hosted_at', { ascending: false })
+    .limit(30);
+  if (error) throw error;
+  return (data as unknown as IdeaWithPeople[]).filter(
+    (idea) =>
+      isDown(idea, myId) &&
+      !!idea.activity &&
+      new Date(idea.activity.starts_at).getTime() + PLAN_SHOWN_AFTER_START_MS > Date.now()
+  );
 }
 
 export async function fetchIdea(id: string) {

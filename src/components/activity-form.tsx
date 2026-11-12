@@ -30,7 +30,7 @@ import {
   type Category,
 } from '@/lib/activities';
 import { formatCountry } from '@/lib/countries';
-import { peopleDown, SPOTS_FOR_SIZE, type IdeaWithPeople } from '@/lib/ideas';
+import { peopleDown, SPOTS_FOR_SIZE, type IdeaWithPeople, type Timing } from '@/lib/ideas';
 import { displayName } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/lib/toast';
@@ -48,25 +48,53 @@ function nextDays() {
   });
 }
 
-// Half-hour slots from 6:00 to 23:30, skipping times that have already passed today.
-function timeSlots(day: Date) {
-  const now = new Date();
+// How much notice a new post needs, so people have time to see it before it starts.
+const MIN_NOTICE_MS = 30 * 60 * 1000;
+// Hosting an idea needs more: everyone who was down gets told and needs time to say yes.
+const IDEA_NOTICE_MS = 3 * 60 * 60 * 1000;
+
+// Half-hour slots from 6:00 to 23:30, from `notice` after now.
+function timeSlots(day: Date, notice: number) {
+  const earliest = Date.now() + notice;
   const slots: Date[] = [];
   for (let minutes = FIRST_HOUR * 60; minutes < 24 * 60; minutes += 30) {
     const slot = new Date(day);
     slot.setHours(0, minutes, 0, 0);
-    if (slot > now) slots.push(slot);
+    if (slot.getTime() >= earliest) slots.push(slot);
   }
   return slots;
 }
 
-function initialDayIndex(days: Date[], existing: Date | null) {
-  if (existing) {
-    const index = days.findIndex((day) => day.toDateString() === existing.toDateString());
-    if (index >= 0) return index;
+// A first guess at when to host an idea, from when its people said suits them.
+function ideaStart(days: Date[], timing: Timing, notice: number) {
+  const at = (hour: number, fits: (day: Date) => boolean) =>
+    days
+      .filter(fits)
+      .flatMap((day) => timeSlots(day, notice))
+      .find((slot) => slot.getHours() === hour && slot.getMinutes() === 0) ?? null;
+  const weekend = (day: Date) => day.getDay() === 0 || day.getDay() === 6;
+  switch (timing) {
+    case 'weekends':
+      return at(10, weekend);
+    case 'weekday_evenings':
+      return at(19, (day) => !weekend(day));
+    case 'next_week':
+      return at(19, (day) => day.getDay() === 1 && day > days[0]);
+    default:
+      return at(19, (day) => day > days[0]);
   }
-  // Start on today, or tomorrow if it's too late for any slots today.
-  return timeSlots(days[0]).length > 0 ? 0 : 1;
+}
+
+// The day and time the form starts on.
+function initialStart(days: Date[], existing: Date | null, fromIdea: Timing | null) {
+  const notice = fromIdea ? IDEA_NOTICE_MS : MIN_NOTICE_MS;
+  const guess =
+    existing ??
+    (fromIdea ? ideaStart(days, fromIdea, notice) : null) ??
+    days.flatMap((day) => timeSlots(day, notice))[0] ??
+    null;
+  const index = guess ? days.findIndex((day) => day.toDateString() === guess.toDateString()) : -1;
+  return { dayIndex: Math.max(index, 0), startsAt: guess };
 }
 
 // One-tap starting points, so a first post takes seconds. People still add where and when.
@@ -162,10 +190,10 @@ export function ActivityForm({ existing, fromIdea }: ActivityFormProps) {
     existing?.audience ?? fromIdea?.audience ?? 'everyone'
   );
   const [location, setLocation] = useState(existing?.location ?? fromIdea?.area ?? '');
-  const [dayIndex, setDayIndex] = useState(() => initialDayIndex(days, existingStart));
-  const [startsAt, setStartsAt] = useState<Date | null>(
-    () => existingStart ?? timeSlots(days[dayIndex])[0] ?? null
-  );
+  const notice = fromIdea ? IDEA_NOTICE_MS : MIN_NOTICE_MS;
+  const [initial] = useState(() => initialStart(days, existingStart, fromIdea?.timing ?? null));
+  const [dayIndex, setDayIndex] = useState(initial.dayIndex);
+  const [startsAt, setStartsAt] = useState<Date | null>(initial.startsAt);
   const [spots, setSpots] = useState(
     () =>
       existing?.spots ??
@@ -196,7 +224,7 @@ export function ActivityForm({ existing, fromIdea }: ActivityFormProps) {
     );
   }, [existingId]);
 
-  const slots = useMemo(() => timeSlots(days[dayIndex]), [days, dayIndex]);
+  const slots = useMemo(() => timeSlots(days[dayIndex], notice), [days, dayIndex, notice]);
   const canPost =
     !nextPostAt && title.trim().length >= 3 && location.trim().length >= 2 && startsAt !== null;
   const limitMessage = nextPostAt
@@ -406,14 +434,16 @@ export function ActivityForm({ existing, fromIdea }: ActivityFormProps) {
                   selected={dayIndex === i}
                   onPress={() => {
                     setDayIndex(i);
-                    setStartsAt(timeSlots(day)[0] ?? null);
+                    setStartsAt(timeSlots(day, notice)[0] ?? null);
                   }}
                 />
               ))}
             </ScrollView>
             {slots.length === 0 ? (
               <ThemedText type="small" themeColor="textSecondary">
-                No times left today. Pick another day.
+                {fromIdea
+                  ? "Hosted ideas need 3 hours' notice. Pick another day."
+                  : 'No times left today. Pick another day.'}
               </ThemedText>
             ) : (
               <ScrollView
@@ -429,6 +459,11 @@ export function ActivityForm({ existing, fromIdea }: ActivityFormProps) {
                   />
                 ))}
               </ScrollView>
+            )}
+            {fromIdea && (
+              <ThemedText type="small" themeColor="textSecondary">
+                At least 3 hours from now, so everyone who was down has time to see it and join.
+              </ThemedText>
             )}
           </Field>
 

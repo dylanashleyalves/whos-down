@@ -7,7 +7,7 @@ import { Pill } from '@/components/pill';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Brand, Spacing, withAlpha } from '@/constants/theme';
-import { Audiences, Categories } from '@/lib/activities';
+import { Audiences, Categories, formatDay, formatTime, hasStarted } from '@/lib/activities';
 import { downLabel, ideaSummary, isDown, peopleDown, type IdeaWithPeople } from '@/lib/ideas';
 import { displayName } from '@/lib/profiles';
 
@@ -30,30 +30,39 @@ export function IdeaCard({ idea, myId, onToggleDown, busy, onPress, width }: Ide
   const people = peopleDown(idea);
   const mine = idea.user_id === myId;
   const down = isDown(idea, myId);
+  // Someone hosted it: the card now leads to the plan instead of collecting interest.
+  const plan = idea.activity_id ? idea.activity : null;
+  const started = !!plan && hasStarted(plan);
+  const accent = plan ? '#22C55E' : category.color;
+  const open = () => (plan ? router.push(`/activity/${plan.id}`) : router.push(`/idea/${idea.id}`));
 
   return (
     <Pressable
       disabled={onPress === null}
-      onPress={onPress ?? (() => router.push(`/idea/${idea.id}`))}
+      onPress={onPress ?? open}
       style={({ pressed }) => [width !== undefined && { width }, pressed && styles.pressed]}>
       <ThemedView
         type="backgroundElement"
         style={[
           styles.card,
           {
-            borderColor: withAlpha(category.color, 0.6),
-            backgroundImage: `linear-gradient(135deg, ${withAlpha(category.color, 0.18)} 0%, transparent 60%)`,
+            borderColor: withAlpha(accent, 0.6),
+            backgroundImage: `linear-gradient(135deg, ${withAlpha(accent, 0.18)} 0%, transparent 60%)`,
           },
         ]}>
         <FloatingEmoji
-          emoji="💡"
+          emoji={plan ? '🎉' : '💡'}
           size={84}
           rotate={12}
           opacity={0.1}
           at={{ right: -10, top: -6 }}
         />
         <View style={styles.pills}>
-          <Pill color={Brand.purple} label="💡 Idea" bold />
+          {plan ? (
+            <Pill color="#22C55E" label="🎉 It's on!" bold />
+          ) : (
+            <Pill color={Brand.purple} label="💡 Idea" bold />
+          )}
           <Pill color={category.color} label={`${category.emoji} ${category.label}`} />
           {idea.audience !== 'everyone' && (
             <Pill
@@ -69,10 +78,17 @@ export function IdeaCard({ idea, myId, onToggleDown, busy, onPress, width }: Ide
         <ThemedText type="default" style={styles.title} numberOfLines={2}>
           {idea.title || 'Your idea'}
         </ThemedText>
-        <ThemedText type="small" numberOfLines={2}>
-          {ideaSummary(idea)}
-        </ThemedText>
-        {idea.note && (
+        {plan ? (
+          <ThemedText type="small" numberOfLines={2}>
+            {`🕒 ${formatDay(new Date(plan.starts_at))} · ${formatTime(new Date(plan.starts_at))}`}
+            {started ? '  ·  Started' : ''}
+          </ThemedText>
+        ) : (
+          <ThemedText type="small" numberOfLines={2}>
+            {ideaSummary(idea)}
+          </ThemedText>
+        )}
+        {!plan && idea.note && (
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
             “{idea.note}”
           </ThemedText>
@@ -92,23 +108,37 @@ export function IdeaCard({ idea, myId, onToggleDown, busy, onPress, width }: Ide
             </ThemedText>
           </View>
 
-          {onToggleDown && !mine && (
-            <Pressable
-              disabled={busy}
-              onPress={onToggleDown}
-              hitSlop={6}
-              style={({ pressed }) => pressed && styles.pressed}>
-              <View style={[styles.downButton, down ? styles.downOn : styles.downOff]}>
-                {busy ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <ThemedText type="smallBold" style={styles.downLabel}>
-                    {down ? "You're down ✓" : "I'm down too"}
-                  </ThemedText>
-                )}
-              </View>
-            </Pressable>
-          )}
+          {plan
+            ? onPress !== null && (
+                <Pressable
+                  onPress={open}
+                  hitSlop={6}
+                  style={({ pressed }) => pressed && styles.pressed}>
+                  <View style={[styles.downButton, styles.downOff]}>
+                    <ThemedText type="smallBold" style={styles.downLabel}>
+                      See the plan ›
+                    </ThemedText>
+                  </View>
+                </Pressable>
+              )
+            : onToggleDown &&
+              !mine && (
+                <Pressable
+                  disabled={busy}
+                  onPress={onToggleDown}
+                  hitSlop={6}
+                  style={({ pressed }) => pressed && styles.pressed}>
+                  <View style={[styles.downButton, down ? styles.downOn : styles.downOff]}>
+                    {busy ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <ThemedText type="smallBold" style={styles.downLabel}>
+                        {down ? "You're down ✓" : "I'm down too"}
+                      </ThemedText>
+                    )}
+                  </View>
+                </Pressable>
+              )}
         </View>
       </ThemedView>
     </Pressable>

@@ -31,7 +31,7 @@ import {
   type Category,
 } from '@/lib/activities';
 import { fetchUnreadCounts } from '@/lib/chat';
-import { fetchOpenIdeas, isDown, type IdeaWithPeople } from '@/lib/ideas';
+import { fetchMyHostedIdeas, fetchOpenIdeas, isDown, type IdeaWithPeople } from '@/lib/ideas';
 import { fetchFirstTimers, fetchXp } from '@/lib/ranks';
 import { formatCountry } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
@@ -131,12 +131,14 @@ export default function FeedScreen() {
 
   const loadIdeas = useCallback(async () => {
     try {
-      setIdeas(await fetchOpenIdeas());
+      // Hosted ideas you're part of come first, so you can always get back to the plan.
+      const [hosted, open] = await Promise.all([fetchMyHostedIdeas(myId), fetchOpenIdeas()]);
+      setIdeas([...hosted, ...open]);
     } catch (e) {
       // Ideas are extra: if they can't load, the activities still show.
       console.warn('Could not load ideas', e);
     }
-  }, []);
+  }, [myId]);
 
   const load = useCallback(async () => {
     try {
