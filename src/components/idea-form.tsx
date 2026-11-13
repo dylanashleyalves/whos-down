@@ -276,8 +276,8 @@ export function IdeaForm() {
 
           <PrimaryButton label="💡 Share my idea" busy={busy} dimmed={!canPost} onPress={share} />
           <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-            You can have {MAX_OPEN_IDEAS} ideas up at a time. Each one stays up for 14 days or until
-            someone hosts it.
+            This one stays up {Timings[timing].lasts}, or until someone hosts it. You can have{' '}
+            {MAX_OPEN_IDEAS} ideas up at a time.
           </ThemedText>
         </ScrollView>
       </KeyboardAvoidingView>

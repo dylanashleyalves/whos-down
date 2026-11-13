@@ -4,12 +4,14 @@ import { supabase } from '@/lib/supabase';
 
 // "I'd be down for…": an idea without a set time or place (0021_down_for.sql).
 
+// `lasts` is how long an idea with this timing stays up (idea_expiry in
+// 0025_idea_expiry.sql), unless someone hosts it first.
 export const Timings = {
-  flexible: { label: 'Flexible', emoji: '🤷' },
-  weekday_evenings: { label: 'Weekday evenings', emoji: '🌆' },
-  weekends: { label: 'Weekends', emoji: '☀️' },
-  this_week: { label: 'This week', emoji: '📅' },
-  next_week: { label: 'Next week', emoji: '🗓️' },
+  flexible: { label: 'Flexible', emoji: '🤷', lasts: 'for 14 days' },
+  weekday_evenings: { label: 'Weekday evenings', emoji: '🌆', lasts: 'until Friday next week' },
+  weekends: { label: 'Weekends', emoji: '☀️', lasts: 'for the next two weekends' },
+  this_week: { label: 'This week', emoji: '📅', lasts: 'until Sunday night' },
+  next_week: { label: 'Next week', emoji: '🗓️', lasts: 'until the end of next week' },
 } as const;
 
 export type Timing = keyof typeof Timings;

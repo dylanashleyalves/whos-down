@@ -61,7 +61,7 @@ export default function IdeaScreen() {
         <EmptyState
           emoji="💨"
           title="This idea is gone"
-          text={error ?? 'It may have been deleted, or it ended after 14 days.'}
+          text={error ?? 'It may have been deleted, or its time ran out.'}
           action={{ label: 'Back to Discover', onPress: () => router.navigate('/') }}
         />
       </ThemedView>

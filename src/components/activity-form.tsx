@@ -51,7 +51,7 @@ function nextDays() {
 // How much notice a new post needs, so people have time to see it before it starts.
 const MIN_NOTICE_MS = 30 * 60 * 1000;
 // Hosting an idea needs more: everyone who was down gets told and needs time to say yes.
-const IDEA_NOTICE_MS = 3 * 60 * 60 * 1000;
+const IDEA_NOTICE_MS = 2 * 60 * 60 * 1000;
 
 // Half-hour slots from 6:00 to 23:30, from `notice` after now.
 function timeSlots(day: Date, notice: number) {
@@ -442,7 +442,7 @@ export function ActivityForm({ existing, fromIdea }: ActivityFormProps) {
             {slots.length === 0 ? (
               <ThemedText type="small" themeColor="textSecondary">
                 {fromIdea
-                  ? "Hosted ideas need 3 hours' notice. Pick another day."
+                  ? "Hosted ideas need 2 hours' notice. Pick another day."
                   : 'No times left today. Pick another day.'}
               </ThemedText>
             ) : (
@@ -462,7 +462,7 @@ export function ActivityForm({ existing, fromIdea }: ActivityFormProps) {
             )}
             {fromIdea && (
               <ThemedText type="small" themeColor="textSecondary">
-                At least 3 hours from now, so everyone who was down has time to see it and join.
+                At least 2 hours from now, so everyone who was down has time to see it and join.
               </ThemedText>
             )}
           </Field>

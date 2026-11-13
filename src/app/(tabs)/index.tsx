@@ -50,7 +50,7 @@ const WHEN: { key: When; label: string }[] = [
   { key: 'tomorrow', label: 'Tomorrow' },
 ];
 
-function startsWithin(activity: ActivityWithPeople, when: When) {
+function startsWithin(activity: Pick<ActivityWithPeople, 'starts_at'>, when: When) {
   const startsAt = new Date(activity.starts_at).getTime();
   if (when === 'soon') return startsAt <= Date.now() + 2 * 60 * 60 * 1000;
   const day = new Date();
@@ -123,10 +123,14 @@ export default function FeedScreen() {
   const shown = activities.filter(
     (a) => (!filter || a.category === filter) && (!timeFilter || startsWithin(a, timeFilter))
   );
-  // Ideas have no set time, so only the category filter applies. My plans shows the ones
+  // Ideas have no set time, so a "When" filter (Next 2 hours, Today, Tomorrow) leaves out
+  // open ideas and only keeps hosted ones whose plan starts then. My plans shows the ones
   // you posted or said you're down for.
   const shownIdeas = ideas.filter(
-    (idea) => (!filter || idea.category === filter) && (view === 'discover' || isDown(idea, myId))
+    (idea) =>
+      (!filter || idea.category === filter) &&
+      (view === 'discover' || isDown(idea, myId)) &&
+      (!timeFilter || (!!idea.activity && startsWithin(idea.activity, timeFilter)))
   );
 
   const loadIdeas = useCallback(async () => {
@@ -284,7 +288,7 @@ export default function FeedScreen() {
                       ? '💡 People would be down for…'
                       : "💡 Ideas you're down for"
                   }
-                  showAdd={view === 'discover'}
+                  showAdd={view === 'discover' && !timeFilter}
                   onChanged={loadIdeas}
                 />
                 {view === 'discover' && shown.length > 0 && (
