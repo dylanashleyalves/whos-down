@@ -25,15 +25,21 @@ async function notifications() {
   if (!canUsePush()) return null;
   loaded ??= import('expo-notifications')
     .then((module) => {
-      // The app already shows its own banner for new messages while it's open, so don't
-      // also show the system one then.
+      // While the app is open it shows its own banner for chat and direct messages
+      // (MessageAlerts), so skip the system one for those. Everything else (joins, ideas,
+      // reminders) has no in-app banner, so show the system one.
       module.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowBanner: false,
-          shouldShowList: true,
-          shouldPlaySound: false,
-          shouldSetBadge: false,
-        }),
+        handleNotification: async (notification) => {
+          const href = notification.request.content.data?.href;
+          const message =
+            typeof href === 'string' && (href.startsWith('/chat/') || href.startsWith('/dm/'));
+          return {
+            shouldShowBanner: !message,
+            shouldShowList: true,
+            shouldPlaySound: !message,
+            shouldSetBadge: false,
+          };
+        },
       });
       return module;
     })
@@ -96,7 +102,8 @@ export function onNotificationTap(onOpen: (href: string) => void) {
   notifications().then(async (Notifications) => {
     if (!Notifications) return;
     const open = (response: NotificationsModule.NotificationResponse | null) => {
-      if (!response || response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
+      if (!response || response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER)
+        return;
       const href = response.notification.request.content.data?.href;
       if (typeof href === 'string' && href.startsWith('/')) onOpen(href);
     };

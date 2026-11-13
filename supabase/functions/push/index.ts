@@ -1,7 +1,7 @@
 // Sends push notifications through Expo's push service.
 // Called by database triggers (new group message, direct message, someone joining, a new
-// activity, kudos, someone in your crew being free, "I'm down too" on an idea, an idea
-// being hosted) and
+// activity or idea, kudos, someone in your crew being free, "I'm down too" on an idea, an
+// idea being hosted) and
 // every 15 minutes by a cron job for reminders. See 0011_push_notifications.sql.
 //
 // Secret (Supabase Dashboard -> Edge Functions -> Secrets):
@@ -213,46 +213,47 @@ const CATEGORY_EMOJI: Record<string, string> = {
   hangout: '🍻',
 };
 
-// A new activity: tell people in the same country who have its type as an interest, can
-// join it (guys-only / girls-only), aren't busy, and haven't had 3 of these today.
-async function onActivity(record: {
+// Who should hear about a new post (an activity or an idea): people in the same country
+// who can join it (guys-only / girls-only), aren't busy, and haven't had their share of
+// these today. Posts outside someone's interests stop sooner, so there's always room for
+// one that matches. Activities and ideas share the daily limit.
+async function nearbyFor(post: {
   id: string;
-  host_id: string;
-  title: string;
+  posterId: string;
   category: string;
   country: string | null;
   audience: string;
-  starts_at: string;
+  logKind: string;
 }) {
-  if (!record.country) return 0;
+  if (!post.country) return [];
   const now = new Date().toISOString();
   const { data: people } = await supabase
     .from('profiles')
     .select('id, status, status_until, interests')
-    .eq('country', record.country)
-    .neq('id', record.host_id);
+    .eq('country', post.country)
+    .neq('id', post.posterId);
   const interested = new Set(
-    (people ?? []).filter((p) => p.interests?.includes(record.category)).map((p) => p.id as string)
+    (people ?? []).filter((p) => p.interests?.includes(post.category)).map((p) => p.id as string)
   );
   let ids = (people ?? [])
     .filter((p) => !(p.status === 'busy' && p.status_until && p.status_until > now))
     .map((p) => p.id as string);
 
-  if (record.audience !== 'everyone' && ids.length > 0) {
+  if (post.audience !== 'everyone' && ids.length > 0) {
     const { data: genders } = await supabase
       .from('profile_private')
       .select('id')
       .in('id', ids)
-      .eq('gender', record.audience === 'guys' ? 'guy' : 'girl');
+      .eq('gender', post.audience === 'guys' ? 'guy' : 'girl');
     ids = (genders ?? []).map((g) => g.id as string);
   }
-  ids = await withoutBlocked(ids, record.host_id);
-  if (ids.length === 0) return 0;
+  ids = await withoutBlocked(ids, post.posterId);
+  if (ids.length === 0) return [];
 
   const { data: today } = await supabase
     .from('notification_log')
     .select('user_id')
-    .eq('kind', 'new_activity')
+    .in('kind', ['new_activity', 'new_idea'])
     .in('user_id', ids)
     .gte('sent_at', new Date(Date.now() - 24 * 60 * MINUTE).toISOString());
   const counts = new Map<string, number>();
@@ -262,9 +263,29 @@ async function onActivity(record: {
       (counts.get(id) ?? 0) <
       (interested.has(id) ? ACTIVITY_ALERTS_PER_DAY : OTHER_ACTIVITY_ALERTS_PER_DAY)
   );
+  return firstTime(ids, post.logKind, post.id);
+}
 
+// A new activity: tell people nearby (see nearbyFor).
+async function onActivity(record: {
+  id: string;
+  host_id: string;
+  title: string;
+  category: string;
+  country: string | null;
+  audience: string;
+  starts_at: string;
+}) {
+  const recipients = await nearbyFor({
+    id: record.id,
+    posterId: record.host_id,
+    category: record.category,
+    country: record.country,
+    audience: record.audience,
+    logKind: 'new_activity',
+  });
+  if (recipients.length === 0) return 0;
   const host = await nameOf(record.host_id);
-  const recipients = await firstTime(ids, 'new_activity', record.id);
   return send(
     recipients.map((userId) => ({
       userId,
@@ -272,6 +293,36 @@ async function onActivity(record: {
       title: `${CATEGORY_EMOJI[record.category] ?? '✨'} Who's down?`,
       body: `${host} posted: ${preview(record.title)}`,
       href: `/activity/${record.id}`,
+    }))
+  );
+}
+
+// A new "I'd be down for…" idea: tell people nearby, and open the idea when tapped.
+async function onIdea(record: {
+  id: string;
+  user_id: string;
+  title: string;
+  category: string;
+  country: string | null;
+  audience: string;
+}) {
+  const recipients = await nearbyFor({
+    id: record.id,
+    posterId: record.user_id,
+    category: record.category,
+    country: record.country,
+    audience: record.audience,
+    logKind: 'new_idea',
+  });
+  if (recipients.length === 0) return 0;
+  const poster = await nameOf(record.user_id);
+  return send(
+    recipients.map((userId) => ({
+      userId,
+      kind: 'activities' as const,
+      title: `💡 ${poster} would be down for…`,
+      body: `${CATEGORY_EMOJI[record.category] ?? '✨'} ${preview(record.title)}. Tap "I'm down too" if you're keen!`,
+      href: `/idea/${record.id}`,
     }))
   );
 }
@@ -432,6 +483,7 @@ async function onIdeaHosted(record: { idea_id: string; activity_id: string; host
   const recipients = await firstTime(ids, 'idea_hosted', record.idea_id);
   if (recipients.length === 0) return 0;
   const host = await nameOf(record.host_id);
+  const title = activity.data.title as string;
   const when = new Date(activity.data.starts_at as string).toLocaleString('en-SG', {
     timeZone: 'Asia/Singapore',
     weekday: 'short',
@@ -445,7 +497,7 @@ async function onIdeaHosted(record: { idea_id: string; activity_id: string; host
       userId,
       kind: 'activities' as const,
       title: "🎉 It's on!",
-      body: `${host} is hosting ${preview(activity.data.title as string)}, ${when}. Tap to grab a spot.`,
+      body: `${host} is hosting ${preview(title)}, ${when}. Tap to grab a spot.`,
       href: `/activity/${record.activity_id}`,
     }))
   );
@@ -538,6 +590,7 @@ Deno.serve(async (request) => {
       dm: onDirectMessage,
       join: onJoin,
       activity: onActivity,
+      idea: onIdea,
       kudos: onKudos,
       status: onStatus,
       idea_interest: onIdeaInterest,
